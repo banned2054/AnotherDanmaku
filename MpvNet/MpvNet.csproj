@@ -1,0 +1,21 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+	<PropertyGroup>
+		<TargetFramework>net8.0</TargetFramework>
+		<AssemblyName>libmpvnet</AssemblyName>
+		<Product>danmaku</Product>
+		<Nullable>enable</Nullable>
+		<RootNamespace>MpvNet</RootNamespace>
+		<AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
+	</PropertyGroup>
+
+	<ItemGroup>
+		<None Include="..\README.md" Link="Docs\README.md" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<PackageReference Include="CommunityToolkit.Mvvm" Version="8.2.2" />
+		<PackageReference Include="NGettext" Version="0.6.7" />
+	</ItemGroup>
+
+</Project>
