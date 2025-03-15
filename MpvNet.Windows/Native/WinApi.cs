@@ -1,8 +1,7 @@
-﻿
 using System.Drawing;
 using System.Runtime.InteropServices;
 using System.Text;
-using static HandyControl.Tools.Interop.InteropValues;
+using static MpvNet.Windows.WPF.HandyControl.Tools.Interop.InteropValues;
 
 namespace MpvNet.Windows.Native;
 
@@ -21,7 +20,7 @@ public static class WinApi
     public static extern uint ActivateKeyboardLayout(IntPtr hkl, uint flags);
 
     [DllImport("user32.dll")]
-    public static extern bool GetWindowRect(IntPtr hwnd, out RECT lpRect);
+    public static extern bool GetWindowRect(IntPtr hwnd, out Rect lpRect);
 
     [DllImport("user32.dll", CharSet = CharSet.Unicode)]
     public static extern IntPtr FindWindowEx(
@@ -49,11 +48,11 @@ public static class WinApi
     public static extern int GetDpiForWindow(IntPtr hwnd);
 
     [DllImport("user32.dll")]
-    public static extern bool AdjustWindowRect(ref RECT lpRect, uint dwStyle, bool bMenu);
+    public static extern bool AdjustWindowRect(ref Rect lpRect, uint dwStyle, bool bMenu);
 
     [DllImport("user32.dll")]
     public static extern bool AdjustWindowRectExForDpi(
-        ref RECT lpRect, uint dwStyle, bool bMenu, uint dwExStyle, uint dpi);
+        ref Rect lpRect, uint dwStyle, bool bMenu, uint dwExStyle, uint dpi);
 
     [DllImport("user32.dll")]
     public static extern bool SetWindowPos(
@@ -71,40 +70,39 @@ public static class WinApi
 
     [DllImport("dwmapi.dll")]
     public static extern int DwmGetWindowAttribute(
-        IntPtr hwnd, uint dwAttribute, out RECT pvAttribute, uint cbAttribute);
+        IntPtr hwnd, uint dwAttribute, out Rect pvAttribute, uint cbAttribute);
 
     [StructLayout(LayoutKind.Sequential)]
-    public struct RECT
+    public struct Rect
     {
         public int Left;
         public int Top;
         public int Right;
         public int Bottom;
 
-        public RECT(Rectangle r)
+        public Rect(Rectangle r)
         {
-            Left = r.Left;
-            Top = r.Top;
-            Right = r.Right;
+            Left   = r.Left;
+            Top    = r.Top;
+            Right  = r.Right;
             Bottom = r.Bottom;
         }
 
-        public RECT(int left, int top, int right, int bottom)
+        public Rect(int left, int top, int right, int bottom)
         {
-            Left = left;
-            Top = top;
-            Right = right;
+            Left   = left;
+            Top    = top;
+            Right  = right;
             Bottom = bottom;
         }
 
         public Rectangle ToRectangle() => Rectangle.FromLTRB(Left, Top, Right, Bottom);
-        public Size Size => new Size(Right - Left, Bottom - Top);
-        public int Width => Right - Left;
-        public int Height => Bottom - Top;
+        public int       Width         => Right  - Left;
+        public int       Height        => Bottom - Top;
 
-        public static RECT FromRectangle(Rectangle rect)
+        public static Rect FromRectangle(Rectangle rect)
         {
-            return new RECT(rect.X, rect.Y, rect.X + rect.Width, rect.Y + rect.Height);
+            return new Rect(rect.X, rect.Y, rect.X + rect.Width, rect.Y + rect.Height);
         }
 
         public override string ToString()
@@ -114,25 +112,25 @@ public static class WinApi
     }
 
     [StructLayout(LayoutKind.Sequential)]
-    public struct NCCALCSIZE_PARAMS
+    public struct NccalcsizeParams
     {
-        public NCCALCSIZE_PARAMS(RECT[] r, WINDOWPOS wp)
+        public NccalcsizeParams(Rect[] r, WindowPos wp)
         {
-            rgrc = r;
+            rgrc  = r;
             lppos = wp;
         }
 
         [MarshalAs(UnmanagedType.ByValArray, SizeConst = 3)]
-        public RECT[] rgrc;
-        public WINDOWPOS lppos;
+        public Rect[] rgrc;
+
+        public WindowPos lppos;
     }
 
     [StructLayout(LayoutKind.Sequential)]
     public struct CopyDataStruct
     {
-        public IntPtr dwData;
-        public int cbData;
-        [MarshalAs(UnmanagedType.LPTStr)]
-        public string lpData;
+        public                                   IntPtr dwData;
+        public                                   int    cbData;
+        [MarshalAs(UnmanagedType.LPTStr)] public string lpData;
     }
 }

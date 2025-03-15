@@ -1,4 +1,4 @@
-﻿
+
 namespace MpvNet.Windows.WinForms;
 
 partial class MainForm
@@ -48,11 +48,11 @@ partial class MainForm
         // MainForm
         // 
         AllowDrop = true;
-        AutoScaleDimensions = new System.Drawing.SizeF(288F, 288F);
+        AutoScaleDimensions = new System.Drawing.SizeF(96F, 96F);
         AutoScaleMode = System.Windows.Forms.AutoScaleMode.Dpi;
         BackColor = System.Drawing.Color.Black;
         ClientSize = new System.Drawing.Size(1243, 720);
-        Font = new System.Drawing.Font("Segoe UI", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point);
+        Font = new System.Drawing.Font("Segoe UI", 9F);
         Icon = (System.Drawing.Icon)resources.GetObject("$this.Icon");
         Margin = new System.Windows.Forms.Padding(3, 4, 3, 4);
         Name = "MainForm";
