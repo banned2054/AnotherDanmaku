@@ -1,10 +1,13 @@
+﻿
 using System.Globalization;
+using System.IO;
 
 namespace NGettext.Wpf
 {
     public interface ILocalizer
     {
-        ICatalog        Catalog        { get; }
+        ICatalog Catalog { get; }
+        ICatalog GetCatalog(CultureInfo cultureInfo);
         ICultureTracker CultureTracker { get; }
     }
 
@@ -15,23 +18,23 @@ namespace NGettext.Wpf
 
         public Localizer(ICultureTracker cultureTracker, string domainName, string localeFolder)
         {
-            _domainName    = domainName;
-            _localeFolder  = localeFolder;
+            _domainName = domainName;
+            _localeFolder = localeFolder;
             CultureTracker = cultureTracker;
 
             if (cultureTracker == null)
                 throw new ArgumentNullException(nameof(cultureTracker));
 
-            cultureTracker.CultureChanging += ResetCatalog!;
+            cultureTracker.CultureChanging += ResetCatalog;
             ResetCatalog(cultureTracker.CurrentCulture);
         }
 
-        private void ResetCatalog(object sender, CultureEventArgs e)
+        void ResetCatalog(object sender, CultureEventArgs e)
         {
             ResetCatalog(e.CultureInfo);
         }
 
-        private void ResetCatalog(CultureInfo cultureInfo)
+        void ResetCatalog(CultureInfo cultureInfo)
         {
             Catalog = GetCatalog(cultureInfo);
         }
@@ -45,7 +48,7 @@ namespace NGettext.Wpf
 
         public void Dispose()
         {
-            CultureTracker.CultureChanging -= ResetCatalog!;
+            CultureTracker.CultureChanging -= ResetCatalog;
         }
     }
 
@@ -54,33 +57,61 @@ namespace NGettext.Wpf
         internal struct MsgIdWithContext
         {
             internal string Context { get; set; }
-            internal string MsgId   { get; set; }
+            internal string MsgId { get; set; }
         }
 
         internal static MsgIdWithContext ConvertToMsgIdWithContext(string msgId)
         {
             var result = new MsgIdWithContext { MsgId = msgId };
 
-            if (!msgId.Contains("|")) return result;
-            var pipePosition = msgId.IndexOf('|');
-            result.Context = msgId[..pipePosition];
-            result.MsgId   = msgId[(pipePosition + 1)..];
+            if (msgId.Contains("|"))
+            {
+                var pipePosition = msgId.IndexOf('|');
+                result.Context = msgId.Substring(0, pipePosition);
+                result.MsgId = msgId.Substring(pipePosition + 1);
+            }
 
             return result;
         }
 
         internal static string Gettext(this ILocalizer localizer, string msgId, params object[] values)
         {
+            if (msgId == null)
+                return "";
+            
             var msgIdWithContext = ConvertToMsgIdWithContext(msgId);
 
-            return localizer.Catalog.GetParticularString(msgIdWithContext.Context, msgIdWithContext.MsgId, values);
+            if (localizer is null)
+            {
+                CompositionRoot.WriteMissingInitializationErrorMessage();
+                return string.Format(msgIdWithContext.MsgId, values);
+            }
+
+            if (msgIdWithContext.Context != null)
+            {
+                return localizer.Catalog.GetParticularString(msgIdWithContext.Context, msgIdWithContext.MsgId, values);
+            }
+
+            return localizer.Catalog.GetString(msgIdWithContext.MsgId, values);
         }
 
         internal static string? Gettext(this ILocalizer localizer, string msgId)
         {
+            if (msgId is null) 
+                return null;
+
             var msgIdWithContext = ConvertToMsgIdWithContext(msgId);
 
-            return localizer.Catalog.GetParticularString(msgIdWithContext.Context, msgIdWithContext.MsgId);
+            if (localizer is null)
+            {
+                CompositionRoot.WriteMissingInitializationErrorMessage();
+                return msgIdWithContext.MsgId;
+            }
+
+            if (msgIdWithContext.Context != null)
+                return localizer.Catalog.GetParticularString(msgIdWithContext.Context, msgIdWithContext.MsgId);
+
+            return localizer.Catalog.GetString(msgIdWithContext.MsgId);
         }
     }
 }

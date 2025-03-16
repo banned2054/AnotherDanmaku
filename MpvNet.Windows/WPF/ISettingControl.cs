@@ -1,7 +1,8 @@
+﻿
 namespace MpvNet.Windows.WPF;
 
-internal interface ISettingControl
+interface ISettingControl
 {
-    bool    Contains(string searchString);
+    bool Contains(string searchString);
     Setting Setting { get; }
 }

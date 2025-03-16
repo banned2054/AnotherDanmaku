@@ -27,7 +27,7 @@ public static class WinApiHelp
         }
     }
 
-    public static void AdjustWindowRectangle(IntPtr hwnd, ref RECT rc, int dpi)
+    public static void AdjustWindowRect(IntPtr hwnd, ref RECT rc, int dpi)
     {
         uint style = (uint)GetWindowLongPtr(hwnd, -16); // GWL_STYLE
         uint styleEx = (uint)GetWindowLongPtr(hwnd, -20); // GWL_EXSTYLE
@@ -35,13 +35,13 @@ public static class WinApiHelp
         if (Environment.OSVersion.Version >= WindowsTen1607)
             AdjustWindowRectExForDpi(ref rc, style, false, styleEx, (uint)dpi);
         else
-            AdjustWindowRect(ref rc, style, false);
+            Native.WinApi.AdjustWindowRect(ref rc, style, false);
     }
 
     public static void AddWindowBorders(IntPtr hwnd, ref RECT rc, int dpi, bool changeTop)
     {
         RECT win = rc;
-        AdjustWindowRectangle(hwnd, ref rc, dpi);
+        AdjustWindowRect(hwnd, ref rc, dpi);
 
         if (changeTop)
         {
@@ -64,7 +64,7 @@ public static class WinApiHelp
     public static int GetTitleBarHeight(IntPtr hwnd, int dpi)
     {
         RECT rect = new RECT();
-        AdjustWindowRectangle(hwnd, ref rect, dpi);
+        AdjustWindowRect(hwnd, ref rect, dpi);
         return -rect.Top;
     }
 

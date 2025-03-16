@@ -1,35 +1,41 @@
+﻿
 using System.Windows;
 using System.Windows.Controls;
 
-namespace MpvNet.Windows.WPF.Controls;
+using MpvNet.Windows.UI;
 
-public partial class ComboBoxSettingControl : ISettingControl
+namespace MpvNet.Windows.WPF;
+
+public partial class ComboBoxSettingControl : UserControl, ISettingControl
 {
-    private readonly OptionSetting _optionSetting;
+    OptionSetting OptionSetting;
 
     public ComboBoxSettingControl(OptionSetting optionSetting)
     {
-        _optionSetting = optionSetting;
+        OptionSetting = optionSetting;
         InitializeComponent();
-        DataContext       = this;
+        DataContext = this;
         TitleTextBox.Text = optionSetting.Name;
 
         if (string.IsNullOrEmpty(optionSetting.Help))
             HelpTextBox.Visibility = Visibility.Collapsed;
 
-        HelpTextBox.Text            = optionSetting.Help;
+        HelpTextBox.Text = optionSetting.Help;
         ComboBoxControl.ItemsSource = optionSetting.Options;
 
-        foreach (var item in optionSetting.Options.Where(item => item.Name == optionSetting.Value))
-            ComboBoxControl.SelectedItem = item;
+        foreach (var item in optionSetting.Options)
+            if (item.Name == optionSetting.Value)
+                ComboBoxControl.SelectedItem = item;
 
-        if (string.IsNullOrEmpty(optionSetting.Url))
+        if (string.IsNullOrEmpty(optionSetting.URL))
             LinkTextBlock.Visibility = Visibility.Collapsed;
 
-        Link.SetURL(optionSetting.Url);
+        Link.SetURL(optionSetting.URL);
     }
 
-    public Setting Setting => _optionSetting;
+    public Theme? Theme => Theme.Current;
+
+    public Setting Setting => OptionSetting;
 
     public bool Contains(string searchString) => ContainsInternal(searchString.ToLower());
 
@@ -41,7 +47,7 @@ public partial class ComboBoxSettingControl : ISettingControl
         if (HelpTextBox.Text.IndexOf(search, StringComparison.InvariantCultureIgnoreCase) > -1)
             return true;
 
-        foreach (var i in _optionSetting.Options)
+        foreach (var i in OptionSetting.Options)
         {
             if (i.Text?.IndexOf(search, StringComparison.InvariantCultureIgnoreCase) > -1)
                 return true;
@@ -56,8 +62,8 @@ public partial class ComboBoxSettingControl : ISettingControl
         return false;
     }
 
-    private void ComboBoxControl_SelectionChanged(object sender, SelectionChangedEventArgs e)
+    void ComboBoxControl_SelectionChanged(object sender, SelectionChangedEventArgs e)
     {
-        _optionSetting.Value = (ComboBoxControl.SelectedItem as OptionSettingOption)?.Name;
+        OptionSetting.Value = (ComboBoxControl.SelectedItem as OptionSettingOption)?.Name;
     }
 }

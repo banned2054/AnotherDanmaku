@@ -1,3 +1,4 @@
+﻿
 namespace MpvNet.Help;
 
 public static class FileHelp
@@ -11,7 +12,7 @@ public static class FileHelp
         }
         catch (Exception ex)
         {
-            Terminal.WriteError("Failed to delete file:" + Br + path + Br + ex.Message);
+            Terminal.WriteError("Failed to delete file:" + BR + path + BR + ex.Message);
         }
     }
 

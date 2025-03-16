@@ -1,3 +1,4 @@
+﻿
 namespace MpvNet.ExtensionMethod;
 
 public static class PathStringExtension
@@ -9,15 +10,15 @@ public static class PathStringExtension
         if (string.IsNullOrEmpty(filepath))
             return "";
 
-        var chars = filepath.ToCharArray();
+        char[] chars = filepath.ToCharArray();
 
-        for (var x = filepath.Length - 1; x >= 0; x--)
+        for (int x = filepath.Length - 1; x >= 0; x--)
         {
             if (chars[x] == Path.DirectorySeparatorChar)
                 return "";
 
             if (chars[x] == '.')
-                return filepath[(x + (includeDot ? 0 : 1))..].ToLowerInvariant();
+                return filepath.Substring(x + (includeDot ? 0 : 1)).ToLowerInvariant();
         }
 
         return "";
@@ -28,14 +29,17 @@ public static class PathStringExtension
         if (string.IsNullOrEmpty(instance))
             return "";
 
-        var index = instance.LastIndexOf('\\');
+        int index = instance.LastIndexOf('\\');
 
         if (index > -1)
-            return instance[(index + 1)..];
+            return instance.Substring(index + 1);
 
         index = instance.LastIndexOf('/');
 
-        return index > -1 ? instance[(index + 1)..] : instance;
+        if (index > -1)
+            return instance.Substring(index + 1);
+
+        return instance;
     }
 
     public static string ShortPath(this string instance, int maxLength)
@@ -49,13 +53,14 @@ public static class PathStringExtension
         return instance;
     }
 
+    // Ensure trailing directory separator char
     public static string AddSep(this string instance)
     {
         if (string.IsNullOrEmpty(instance))
             return "";
 
         if (!instance.EndsWith(Path.DirectorySeparatorChar.ToString()))
-            instance += Path.DirectorySeparatorChar;
+            instance = instance + Path.DirectorySeparatorChar;
 
         return instance;
     }

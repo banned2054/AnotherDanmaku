@@ -1,6 +1,5 @@
-using HandyControl.Tools.Interop;
-
-namespace MpvNet.Windows.WPF.HandyControl.Tools.Interop.Handle
+﻿
+namespace HandyControl.Tools.Interop
 {
     internal static class CommonHandles
     {

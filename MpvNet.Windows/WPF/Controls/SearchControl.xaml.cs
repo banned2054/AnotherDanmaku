@@ -1,47 +1,52 @@
-using CommunityToolkit.Mvvm.Input;
+﻿
 using System.Windows;
+using System.Windows.Controls;
 using System.Windows.Input;
+
+using CommunityToolkit.Mvvm.Input;
+
+using MpvNet.Windows.UI;
 
 namespace MpvNet.Windows.WPF.Controls;
 
-public partial class SearchControl
+public partial class SearchControl : UserControl
 {
-    private string? _hintText;
-    private bool    _gotFocus;
+    string? _hintText;
+    bool _gotFocus;
 
     public bool HideClearButton { get; set; }
 
     public SearchControl() => InitializeComponent();
 
-    public string HintText
-    {
+    public Theme? Theme => Theme.Current;
+
+    public string HintText {
         get => _hintText ??= "";
-        set
-        {
+        set {
             _hintText = value;
             UpdateControls();
         }
     }
 
     [RelayCommand]
-    private void Clear()
+    void Clear()
     {
         Text = "";
         Keyboard.Focus(SearchTextBox);
     }
 
-    private void UpdateControls()
+    void UpdateControls()
     {
         HintTextBlock.Text = string.IsNullOrEmpty(Text) ? HintText : "";
 
         if (string.IsNullOrEmpty(Text) || HideClearButton || Text.Length > 30)
         {
-            SearchTextBox.Padding        = new Thickness(2);
+            SearchTextBox.Padding = new Thickness(2);
             SearchClearButton.Visibility = Visibility.Hidden;
         }
         else
         {
-            SearchTextBox.Padding        = new Thickness(2, 2, 20, 2);
+            SearchTextBox.Padding = new Thickness(2, 2, 20, 2);
             SearchClearButton.Visibility = Visibility.Visible;
         }
     }
@@ -53,26 +58,30 @@ public partial class SearchControl
     }
 
     public static readonly DependencyProperty TextProperty =
-        DependencyProperty.Register(nameof(Text), typeof(string),
-                                    typeof(SearchControl), new PropertyMetadata(OnCustomerChangedCallBack));
+        DependencyProperty.Register("Text", typeof(string),
+            typeof(SearchControl), new PropertyMetadata(OnCustomerChangedCallBack));
 
-    private static void OnCustomerChangedCallBack(
+    static void OnCustomerChangedCallBack(
         DependencyObject sender, DependencyPropertyChangedEventArgs e) =>
-        (sender as SearchControl)?.UpdateControls();
+            (sender as SearchControl)?.UpdateControls();
 
-    private void SearchTextBoxGotFocus(object sender, RoutedEventArgs e) => _gotFocus = true;
+    void SearchTextBox_GotFocus(object sender, RoutedEventArgs e) => _gotFocus = true;
 
-    private void SearchTextBoxPreviewMouseUp(object sender, MouseButtonEventArgs e)
+    void SearchTextBox_PreviewMouseUp(object sender, MouseButtonEventArgs e)
     {
-        if (!_gotFocus) return;
-        SearchTextBox?.SelectAll();
-        _gotFocus = false;
+        if (_gotFocus)
+        {
+            SearchTextBox?.SelectAll();
+            _gotFocus = false;
+        }
     }
 
-    private void SearchTextBoxPreviewKeyDown(object sender, KeyEventArgs e)
+    void SearchTextBox_PreviewKeyDown(object sender, KeyEventArgs e)
     {
-        if (e.Key != Key.Escape || string.IsNullOrEmpty(Text)) return;
-        Text      = "";
-        e.Handled = true;
+        if (e.Key == Key.Escape && !string.IsNullOrEmpty(Text))
+        {
+            Text = "";
+            e.Handled = true;
+        }
     }
 }

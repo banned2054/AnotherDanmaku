@@ -1,38 +1,44 @@
+﻿
 using System.Globalization;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
+
 using Forms = System.Windows.Forms;
 
-namespace MpvNet.Windows.WPF.Controls;
+using MpvNet.Windows.UI;
 
-public partial class StringSettingControl : ISettingControl
+namespace MpvNet.Windows.WPF;
+
+public partial class StringSettingControl : UserControl, ISettingControl
 {
-    private readonly StringSetting _stringSetting;
-
+    StringSetting StringSetting;
+    
     public StringSettingControl(StringSetting stringSetting)
     {
-        _stringSetting = stringSetting;
+        StringSetting = stringSetting;
         InitializeComponent();
-        DataContext       = this;
+        DataContext = this;
         TitleTextBox.Text = stringSetting.Name;
-        HelpTextBox.Text  = stringSetting.Help;
-        ValueTextBox.Text = _stringSetting.Value;
+        HelpTextBox.Text = stringSetting.Help;
+        ValueTextBox.Text = StringSetting.Value;
 
-        if (_stringSetting.Width > 0)
-            ValueTextBox.Width = _stringSetting.Width;
+        if (StringSetting.Width > 0)
+            ValueTextBox.Width = StringSetting.Width;
 
-        if (_stringSetting.Type != "folder" && _stringSetting.Type != "color")
+        if (StringSetting.Type != "folder" && StringSetting.Type != "color")
             Button.Visibility = Visibility.Hidden;
 
-        Link.SetUrl(_stringSetting.Url);
+        Link.SetURL(StringSetting.URL);
 
-        if (string.IsNullOrEmpty(stringSetting.Url))
+        if (string.IsNullOrEmpty(stringSetting.URL))
             LinkTextBlock.Visibility = Visibility.Collapsed;
 
         if (string.IsNullOrEmpty(stringSetting.Help))
             HelpTextBox.Visibility = Visibility.Collapsed;
     }
+
+    public Theme? Theme => Theme.Current;
 
     public bool Contains(string search)
     {
@@ -42,30 +48,33 @@ public partial class StringSettingControl : ISettingControl
         if (HelpTextBox.Text.IndexOf(search, StringComparison.InvariantCultureIgnoreCase) > -1)
             return true;
 
-        return ValueTextBox.Text.IndexOf(search, StringComparison.InvariantCultureIgnoreCase) > -1;
+        if (ValueTextBox.Text.IndexOf(search, StringComparison.InvariantCultureIgnoreCase) > -1)
+            return true;
+
+        return false;
     }
 
-    public Setting Setting => _stringSetting;
+    public Setting Setting => StringSetting;
 
     public string? Text
     {
-        get => _stringSetting.Value;
-        set => _stringSetting.Value = value;
+        get => StringSetting.Value;
+        set => StringSetting.Value = value;
     }
 
-    private void ButtonClick(object sender, RoutedEventArgs e)
+    void Button_Click(object sender, RoutedEventArgs e)
     {
-        switch (_stringSetting.Type)
+        switch (StringSetting.Type)
         {
-            case "folder" :
-            {
-                var dialog = new Forms.FolderBrowserDialog { InitialDirectory = ValueTextBox.Text };
+            case "folder":
+                {
+                    var dialog = new Forms.FolderBrowserDialog { InitialDirectory = ValueTextBox.Text };
 
-                if (dialog.ShowDialog() == Forms.DialogResult.OK)
-                    ValueTextBox.Text = dialog.SelectedPath;
-            }
+                    if (dialog.ShowDialog() == Forms.DialogResult.OK)
+                        ValueTextBox.Text = dialog.SelectedPath;
+                }
                 break;
-            case "color" :
+            case "color":
                 using (var dialog = new Forms.ColorDialog())
                 {
                     dialog.FullOpen = true;
@@ -74,55 +83,49 @@ public partial class StringSettingControl : ISettingControl
                     {
                         if (!string.IsNullOrEmpty(ValueTextBox.Text))
                         {
-                            var col = GetColor(ValueTextBox.Text);
-                            dialog.Color = System.Drawing.Color.FromArgb(col.A, col.R, col.G, col.B);
+                            Color col = GetColor(ValueTextBox.Text);
+                            dialog.Color = System.Drawing.Color.FromArgb(col.A, col.R, col.G, col.B); 
                         }
-                    }
-                    catch
-                    {
-                        // ignored
-                    }
+                    } catch {}
 
                     if (dialog.ShowDialog() == Forms.DialogResult.OK)
                         ValueTextBox.Text = "#" + dialog.Color.ToArgb().ToString("X8");
                 }
-
                 break;
         }
     }
 
-    private void ValueTextBox_TextChanged(object sender, TextChangedEventArgs e) => Update();
+    void ValueTextBox_TextChanged(object sender, TextChangedEventArgs e) => Update();
 
-    private static Color GetColor(string value)
+    Color GetColor(string value)
     {
-        if (!value.Contains('/')) return (Color)ColorConverter.ConvertFromString(value);
-        var a = value.Split('/');
-
-        return a.Length switch
+        if (value.Contains('/'))
         {
-            3 => Color.FromRgb(ToByte(a[0]), ToByte(a[1]), ToByte(a[2])),
-            4 => Color.FromArgb(ToByte(a[3]), ToByte(a[0]), ToByte(a[1]), ToByte(a[2])),
-            _ => (Color)ColorConverter.ConvertFromString(value)
-        };
+            string[] a = value.Split('/');
+
+            if (a.Length == 3)
+                return Color.FromRgb(ToByte(a[0]), ToByte(a[1]), ToByte(a[2]));
+            else if (a.Length == 4)
+                return Color.FromArgb(ToByte(a[3]), ToByte(a[0]), ToByte(a[1]), ToByte(a[2]));
+        }
+
+        return (Color)ColorConverter.ConvertFromString(value);
 
         byte ToByte(string val) => Convert.ToByte(Convert.ToSingle(val, CultureInfo.InvariantCulture) * 255);
     }
 
     public void Update()
     {
-        if (_stringSetting.Type != "color") return;
-        var color = Colors.Transparent;
+        if (StringSetting.Type == "color")
+        {
+            Color color = Colors.Transparent;
 
-        if (ValueTextBox.Text != "")
-            try
-            {
-                color = GetColor(ValueTextBox.Text);
-            }
-            catch
-            {
-                // ignored
-            }
+            if (ValueTextBox.Text != "")
+                try {
+                    color = GetColor(ValueTextBox.Text);
+                } catch {}
 
-        ValueTextBox.Background = new SolidColorBrush(color);
+            ValueTextBox.Background = new SolidColorBrush(color);
+        }
     }
 }

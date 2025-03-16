@@ -1,12 +1,15 @@
-using HandyControl.Data;
-using HandyControl.Tools;
+﻿
+
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Animation;
 
-namespace MpvNet.Windows.WPF.HandyControl.Controls
+using HandyControl.Data;
+using HandyControl.Tools;
+
+namespace HandyControl.Controls
 {
     public class ScrollViewer : System.Windows.Controls.ScrollViewer
     {
@@ -17,20 +20,20 @@ namespace MpvNet.Windows.WPF.HandyControl.Controls
         private bool _isRunning;
 
         public static readonly DependencyProperty OrientationProperty = DependencyProperty.Register(
-             "Orientation", typeof(Orientation), typeof(ScrollViewer), new PropertyMetadata(Orientation.Vertical));
+            "Orientation", typeof(Orientation), typeof(ScrollViewer), new PropertyMetadata(Orientation.Vertical));
 
         public Orientation Orientation
         {
-            get => (Orientation)GetValue(OrientationProperty);
+            get => (Orientation) GetValue(OrientationProperty);
             set => SetValue(OrientationProperty, value);
         }
 
         public static readonly DependencyProperty CanMouseWheelProperty = DependencyProperty.Register(
-             "CanMouseWheel", typeof(bool), typeof(ScrollViewer), new PropertyMetadata(ValueBoxes.TrueBox));
+            "CanMouseWheel", typeof(bool), typeof(ScrollViewer), new PropertyMetadata(ValueBoxes.TrueBox));
 
         public bool CanMouseWheel
         {
-            get => (bool)GetValue(CanMouseWheelProperty);
+            get => (bool) GetValue(CanMouseWheelProperty);
             set => SetValue(CanMouseWheelProperty, ValueBoxes.BooleanBox(value));
         }
 
@@ -46,25 +49,22 @@ namespace MpvNet.Windows.WPF.HandyControl.Controls
                 }
                 else
                 {
-                    _totalHorizontalOffset  = HorizontalOffset;
+                    _totalHorizontalOffset = HorizontalOffset;
                     CurrentHorizontalOffset = HorizontalOffset;
-                    _totalHorizontalOffset  = Math.Min(Math.Max(0, _totalHorizontalOffset - e.Delta), ScrollableWidth);
+                    _totalHorizontalOffset = Math.Min(Math.Max(0, _totalHorizontalOffset - e.Delta), ScrollableWidth);
                     CurrentHorizontalOffset = _totalHorizontalOffset;
                 }
-
                 return;
             }
-
             e.Handled = true;
 
             if (Orientation == Orientation.Vertical)
             {
                 if (!_isRunning)
                 {
-                    _totalVerticalOffset  = VerticalOffset;
+                    _totalVerticalOffset = VerticalOffset;
                     CurrentVerticalOffset = VerticalOffset;
                 }
-
                 _totalVerticalOffset = Math.Min(Math.Max(0, _totalVerticalOffset - e.Delta), ScrollableHeight);
                 ScrollToVerticalOffsetWithAnimation(_totalVerticalOffset);
             }
@@ -72,13 +72,22 @@ namespace MpvNet.Windows.WPF.HandyControl.Controls
             {
                 if (!_isRunning)
                 {
-                    _totalHorizontalOffset  = HorizontalOffset;
+                    _totalHorizontalOffset = HorizontalOffset;
                     CurrentHorizontalOffset = HorizontalOffset;
                 }
-
                 _totalHorizontalOffset = Math.Min(Math.Max(0, _totalHorizontalOffset - e.Delta), ScrollableWidth);
                 ScrollToHorizontalOffsetWithAnimation(_totalHorizontalOffset);
             }
+        }
+
+        internal void ScrollToTopInternal(double milliseconds = 500)
+        {
+            if (!_isRunning)
+            {
+                _totalVerticalOffset = VerticalOffset;
+                CurrentVerticalOffset = VerticalOffset;
+            }
+            ScrollToVerticalOffsetWithAnimation(0, milliseconds);
         }
 
         public void ScrollToVerticalOffsetWithAnimation(double offset, double milliseconds = 500)
@@ -89,10 +98,10 @@ namespace MpvNet.Windows.WPF.HandyControl.Controls
                 EasingMode = EasingMode.EaseOut
             };
             animation.FillBehavior = FillBehavior.Stop;
-            animation.Completed += (_, _) =>
+            animation.Completed += (s, e1) =>
             {
                 CurrentVerticalOffset = offset;
-                _isRunning            = false;
+                _isRunning = false;
             };
             _isRunning = true;
 
@@ -107,40 +116,47 @@ namespace MpvNet.Windows.WPF.HandyControl.Controls
                 EasingMode = EasingMode.EaseOut
             };
             animation.FillBehavior = FillBehavior.Stop;
-            animation.Completed += (_, _) =>
+            animation.Completed += (s, e1) =>
             {
                 CurrentHorizontalOffset = offset;
-                _isRunning              = false;
+                _isRunning = false;
             };
             _isRunning = true;
 
             BeginAnimation(CurrentHorizontalOffsetProperty, animation, HandoffBehavior.Compose);
         }
 
-        protected override HitTestResult? HitTestCore(PointHitTestParameters hitTestParameters) =>
+        protected override HitTestResult HitTestCore(PointHitTestParameters hitTestParameters) =>
             IsPenetrating ? null : base.HitTestCore(hitTestParameters);
 
         public static readonly DependencyProperty IsInertiaEnabledProperty = DependencyProperty.RegisterAttached(
-             "IsInertiaEnabled", typeof(bool), typeof(ScrollViewer), new PropertyMetadata(ValueBoxes.FalseBox));
+            "IsInertiaEnabled", typeof(bool), typeof(ScrollViewer), new PropertyMetadata(ValueBoxes.FalseBox));
+
+        public static void SetIsInertiaEnabled(DependencyObject element, bool value) => element.SetValue(IsInertiaEnabledProperty, ValueBoxes.BooleanBox(value));
+
+        public static bool GetIsInertiaEnabled(DependencyObject element) => (bool) element.GetValue(IsInertiaEnabledProperty);
 
         public bool IsInertiaEnabled
         {
-            get => (bool)GetValue(IsInertiaEnabledProperty);
+            get => (bool) GetValue(IsInertiaEnabledProperty);
             set => SetValue(IsInertiaEnabledProperty, ValueBoxes.BooleanBox(value));
         }
 
         public static readonly DependencyProperty IsPenetratingProperty = DependencyProperty.RegisterAttached(
-             "IsPenetrating", typeof(bool), typeof(ScrollViewer), new PropertyMetadata(ValueBoxes.FalseBox));
+            "IsPenetrating", typeof(bool), typeof(ScrollViewer), new PropertyMetadata(ValueBoxes.FalseBox));
 
         public bool IsPenetrating
         {
-            get => (bool)GetValue(IsPenetratingProperty);
+            get => (bool) GetValue(IsPenetratingProperty);
             set => SetValue(IsPenetratingProperty, ValueBoxes.BooleanBox(value));
         }
 
+        public static void SetIsPenetrating(DependencyObject element, bool value) => element.SetValue(IsPenetratingProperty, ValueBoxes.BooleanBox(value));
+
+        public static bool GetIsPenetrating(DependencyObject element) => (bool) element.GetValue(IsPenetratingProperty);
+
         internal static readonly DependencyProperty CurrentVerticalOffsetProperty = DependencyProperty.Register(
-             "CurrentVerticalOffset", typeof(double), typeof(ScrollViewer),
-             new PropertyMetadata(ValueBoxes.Double0Box, OnCurrentVerticalOffsetChanged));
+            "CurrentVerticalOffset", typeof(double), typeof(ScrollViewer), new PropertyMetadata(ValueBoxes.Double0Box, OnCurrentVerticalOffsetChanged));
 
         private static void OnCurrentVerticalOffsetChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
         {
@@ -152,13 +168,12 @@ namespace MpvNet.Windows.WPF.HandyControl.Controls
 
         internal double CurrentVerticalOffset
         {
-            get => (double)GetValue(CurrentVerticalOffsetProperty);
+            get => (double) GetValue(CurrentVerticalOffsetProperty);
             set => SetValue(CurrentVerticalOffsetProperty, value);
         }
 
         internal static readonly DependencyProperty CurrentHorizontalOffsetProperty = DependencyProperty.Register(
-             "CurrentHorizontalOffset", typeof(double), typeof(ScrollViewer),
-             new PropertyMetadata(ValueBoxes.Double0Box, OnCurrentHorizontalOffsetChanged));
+            "CurrentHorizontalOffset", typeof(double), typeof(ScrollViewer), new PropertyMetadata(ValueBoxes.Double0Box, OnCurrentHorizontalOffsetChanged));
 
         private static void OnCurrentHorizontalOffsetChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
         {
@@ -170,7 +185,7 @@ namespace MpvNet.Windows.WPF.HandyControl.Controls
 
         internal double CurrentHorizontalOffset
         {
-            get => (double)GetValue(CurrentHorizontalOffsetProperty);
+            get => (double) GetValue(CurrentHorizontalOffsetProperty);
             set => SetValue(CurrentHorizontalOffsetProperty, value);
         }
     }

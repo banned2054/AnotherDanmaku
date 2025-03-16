@@ -1,15 +1,14 @@
+﻿
 namespace MpvNet;
 
 public class CommandLine
 {
-    private static List<StringPair>? _arguments;
+    static List<StringPair>? _arguments;
 
-    private static string[] PreInitProperties { get; } =
-    {
+    static string[] _preInitProperties { get; } = {
         "input-terminal", "terminal", "input-file", "config", "o",
         "config-dir", "input-conf", "load-scripts", "scripts", "player-operation-mode",
-        "idle", "log-file", "msg-color", "dump-stats", "msg-level", "really-quiet"
-    };
+        "idle", "log-file", "msg-color", "dump-stats", "msg-level", "really-quiet" };
 
     public static List<StringPair> Arguments
     {
@@ -18,11 +17,11 @@ public class CommandLine
             if (_arguments != null)
                 return _arguments;
 
-            _arguments = new List<StringPair>();
+            _arguments = new();
 
-            foreach (var i in Environment.GetCommandLineArgs().Skip(1))
+            foreach (string i in Environment.GetCommandLineArgs().Skip(1))
             {
-                var arg = i;
+                string arg = i;
 
                 if (!arg.StartsWith("--"))
                     continue;
@@ -31,27 +30,26 @@ public class CommandLine
                 {
                     if (arg.Contains("--no-"))
                     {
-                        arg =  arg.Replace("--no-", "--");
+                        arg = arg.Replace("--no-", "--");
                         arg += "=no";
                     }
                     else
                         arg += "=yes";
                 }
 
-                var left  = arg[2..arg.IndexOf("=", StringComparison.Ordinal)];
-                var right = arg[(left.Length + 3)..];
+                string left = arg[2..arg.IndexOf("=")];
+                string right = arg[(left.Length + 3)..];
 
                 if (string.IsNullOrEmpty(left))
                     continue;
 
-                left = left switch
+                switch (left)
                 {
-                    "script"        => "scripts",
-                    "audio-file"    => "audio-files",
-                    "sub-file"      => "sub-files",
-                    "external-file" => "external-files",
-                    _               => left
-                };
+                    case "script": left = "scripts"; break;
+                    case "audio-file": left = "audio-files"; break;
+                    case "sub-file": left = "sub-files"; break;
+                    case "external-file": left = "external-files"; break;
+                }
 
                 _arguments.Add(new StringPair(left, right));
             }
@@ -62,14 +60,19 @@ public class CommandLine
 
     public static void ProcessCommandLineArgsPreInit()
     {
-        foreach (var pair in Arguments.Where(pair => !pair.Name.EndsWith("-add")    &&
-                                                     !pair.Name.EndsWith("-set")    &&
-                                                     !pair.Name.EndsWith("-pre")    &&
-                                                     !pair.Name.EndsWith("-clr")    &&
-                                                     !pair.Name.EndsWith("-append") &&
-                                                     !pair.Name.EndsWith("-remove") &&
-                                                     !pair.Name.EndsWith("-toggle")))
+        foreach (var pair in Arguments)
         {
+            if (pair.Name.EndsWith("-add") ||
+                pair.Name.EndsWith("-set") ||
+                pair.Name.EndsWith("-pre") ||
+                pair.Name.EndsWith("-clr") ||
+                pair.Name.EndsWith("-append") ||
+                pair.Name.EndsWith("-remove") ||
+                pair.Name.EndsWith("-toggle"))
+            {
+                continue;
+            }
+
             Player.ProcessProperty(pair.Name, pair.Value);
 
             if (!App.ProcessProperty(pair.Name, pair.Value))
@@ -79,8 +82,11 @@ public class CommandLine
 
     public static void ProcessCommandLineArgsPostInit()
     {
-        foreach (var pair in Arguments.Where(pair => !PreInitProperties.Contains(pair.Name)))
+        foreach (var pair in Arguments)
         {
+            if (_preInitProperties.Contains(pair.Name))
+                continue;
+
             if (pair.Name.EndsWith("-add"))
                 Player.CommandV("change-list", pair.Name[..^4], "add", pair.Value);
             else if (pair.Name.EndsWith("-set"))
@@ -107,23 +113,37 @@ public class CommandLine
 
     public static void ProcessCommandLineFiles()
     {
-        Player.LoadFiles(Environment.GetCommandLineArgs().Skip(1).Where(arg => !arg.StartsWith("--") && (arg == "-" || arg.Contains("://") || arg.Contains(":\\") || arg.StartsWith("\\\\") || arg.StartsWith(".") || File.Exists(arg))).ToArray(),
-                         !App.Queue, App.Queue);
+        List<string> files = new List<string>();
 
-        if (!App.CommandLine.Contains("--shuffle")) return;
-        Player.Command("playlist-shuffle");
-        Player.SetPropertyInt("playlist-pos", 0);
+        foreach (string arg in Environment.GetCommandLineArgs().Skip(1))
+            if (!arg.StartsWith("--") && (arg == "-" || arg.Contains("://") ||
+                arg.Contains(":\\") || arg.StartsWith("\\\\") || File.Exists(arg)))
+
+                files.Add(arg);
+
+        Player.LoadFiles(files.ToArray(), !App.Queue, App.Queue);
+
+        if (App.CommandLine.Contains("--shuffle"))
+        {
+            Player.Command("playlist-shuffle");
+            Player.SetPropertyInt("playlist-pos", 0);
+        }
     }
 
     public static bool Contains(string name)
     {
-        return Arguments.Any(pair => pair.Name == name);
+        foreach (StringPair pair in Arguments)
+            if (pair.Name == name)
+                return true;
+
+        return false;
     }
 
     public static string GetValue(string name)
     {
-        foreach (var pair in Arguments.Where(pair => pair.Name == name))
-            return pair.Value;
+        foreach (StringPair pair in Arguments)
+            if (pair.Name == name)
+                return pair.Value;
 
         return "";
     }

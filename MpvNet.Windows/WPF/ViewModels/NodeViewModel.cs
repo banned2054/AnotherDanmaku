@@ -1,14 +1,18 @@
+﻿
 using CommunityToolkit.Mvvm.ComponentModel;
+
 using MpvNet.Windows.UI;
 
 namespace MpvNet.Windows.WPF.ViewModels;
 
 public class NodeViewModel : ObservableObject
 {
-    private readonly TreeNode _node;
+    readonly List<NodeViewModel> _children;
+    readonly NodeViewModel? _parent;
+    readonly TreeNode _node;
 
-    private bool _isExpanded;
-    private bool _isSelected;
+    bool _isExpanded;
+    bool _isSelected;
 
     public NodeViewModel(TreeNode node) : this(node, null)
     {
@@ -16,27 +20,25 @@ public class NodeViewModel : ObservableObject
 
     public NodeViewModel(TreeNode node, NodeViewModel? parent)
     {
-        _node  = node;
-        Parent = parent;
+        _node = node;
+        _parent = parent;
 
-        Children = new List<NodeViewModel>(
-                                           _node.Children.Select(i => new NodeViewModel(i, this)).ToList());
+        _children = new List<NodeViewModel>(
+            _node.Children.Select(i => new NodeViewModel(i, this)).ToList());
     }
 
-    public List<NodeViewModel> Children { get; }
+    public List<NodeViewModel> Children => _children;
 
     public string Name => _node.Name;
 
-    public string Path
-    {
-        get
-        {
-            var path   = Name;
-            var parent = Parent;
+    public string Path {
+        get {
+            string path = Name;
+            NodeViewModel? parent = Parent;
 
             while (!string.IsNullOrEmpty(parent?.Name))
             {
-                path   = parent.Name + "/" + path;
+                path = parent.Name + "/" + path;
                 parent = parent.Parent;
             }
 
@@ -44,7 +46,7 @@ public class NodeViewModel : ObservableObject
         }
     }
 
-    public NodeViewModel? Parent { get; }
+    public NodeViewModel? Parent => _parent;
 
     public bool IsExpanded
     {
@@ -53,8 +55,8 @@ public class NodeViewModel : ObservableObject
         {
             SetProperty(ref _isExpanded, value);
 
-            if (_isExpanded && Parent != null)
-                Parent.IsExpanded = true;
+            if (_isExpanded && _parent != null)
+                _parent.IsExpanded = true;
         }
     }
 
@@ -62,5 +64,13 @@ public class NodeViewModel : ObservableObject
     {
         get => _isSelected;
         set => SetProperty(ref _isSelected, value);
+    }
+
+    public bool NameContains(string text)
+    {
+        if (text == "")
+            return false;
+
+        return Name.IndexOf(text, StringComparison.InvariantCultureIgnoreCase) > -1;
     }
 }

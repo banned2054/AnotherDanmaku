@@ -1,3 +1,4 @@
+﻿
 namespace MpvNet.Help;
 
 public static class ProcessHelp
@@ -6,9 +7,9 @@ public static class ProcessHelp
     {
         try
         {
-            using var proc = new Process();
-            proc.StartInfo.FileName        = file;
-            proc.StartInfo.Arguments       = arguments;
+            using Process proc = new Process();
+            proc.StartInfo.FileName = file;
+            proc.StartInfo.Arguments = arguments;
             proc.StartInfo.UseShellExecute = shellExecute;
             proc.Start();
         }

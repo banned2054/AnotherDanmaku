@@ -1,18 +1,22 @@
+﻿
 using System.Globalization;
 
 namespace MpvNet.ExtensionMethod;
 
 public static class StringExtension
 {
-    public static string ToUpperEx(this string? instance) => (instance != null) ? instance.ToUpperInvariant() : "";
+    public static string ToUpperEx(this string instance) => (instance != null) ? instance.ToUpperInvariant() : "";
 
-    public static string ToLowerEx(this string? instance) => (instance != null) ? instance.ToLowerInvariant() : "";
+    public static string ToLowerEx(this string instance) => (instance != null) ? instance.ToLowerInvariant() : "";
 
     public static string TrimEx(this string? instance) => (instance == null) ? "" : instance.Trim();
 
     public static int ToInt(this string instance, int defaultValue = 0)
     {
-        return int.TryParse(instance, out var result) ? result : defaultValue;
+        if (int.TryParse(instance, out int result))
+            return result;
+
+        return defaultValue;
     }
 
     public static float ToFloat(this string instance) =>

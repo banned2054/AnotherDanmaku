@@ -1,17 +1,20 @@
+﻿
 using System.Windows;
 using System.Windows.Controls;
 
+using MpvNet.Windows.UI;
+
 namespace MpvNet.Windows.WPF;
 
-public partial class OptionSettingControl : ISettingControl
+public partial class OptionSettingControl : UserControl, ISettingControl
 {
-    private readonly OptionSetting _optionSetting;
+    OptionSetting OptionSetting;
 
     public OptionSettingControl(OptionSetting optionSetting)
     {
-        _optionSetting = optionSetting;
+        OptionSetting = optionSetting;
         InitializeComponent();
-        DataContext       = this;
+        DataContext = this;
         TitleTextBox.Text = optionSetting.Name;
 
         if (string.IsNullOrEmpty(optionSetting.Help))
@@ -24,13 +27,15 @@ public partial class OptionSettingControl : ISettingControl
 
         ItemsControl.ItemsSource = optionSetting.Options;
 
-        if (string.IsNullOrEmpty(optionSetting.Url))
+        if (string.IsNullOrEmpty(optionSetting.URL))
             LinkTextBlock.Visibility = Visibility.Collapsed;
 
-        Link.SetUrl(optionSetting.Url);
+        Link.SetURL(optionSetting.URL);
     }
 
-    public Setting Setting => _optionSetting;
+    public Theme? Theme => Theme.Current;
+
+    public Setting Setting => OptionSetting;
 
     public bool Contains(string searchString) => ContainsInternal(searchString.ToLower());
 
@@ -42,7 +47,7 @@ public partial class OptionSettingControl : ISettingControl
         if (HelpTextBox.Text.IndexOf(search, StringComparison.InvariantCultureIgnoreCase) > -1)
             return true;
 
-        foreach (var i in _optionSetting.Options)
+        foreach (var i in OptionSetting.Options)
         {
             if (i.Text?.IndexOf(search, StringComparison.InvariantCultureIgnoreCase) > -1)
                 return true;

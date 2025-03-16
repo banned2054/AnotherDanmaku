@@ -1,3 +1,5 @@
+﻿
+using System.Globalization;
 using MpvNet.Help;
 
 namespace MpvNet;
@@ -11,27 +13,38 @@ public class Command
     public Dictionary<string, Action<IList<string>>> Commands => _commands ??= new()
     {
         ["open-conf-folder"] = args => ProcessHelp.ShellExecute(Player.ConfigFolder),
-        ["play-pause"]       = PlayPause,
-        ["shell-execute"]    = args => ProcessHelp.ShellExecute(args[0]),
-        ["show-text"]        = args => ShowText(args[0], Convert.ToInt32(args[1]), Convert.ToInt32(args[2])),
-        ["cycle-audio"]      = args => CycleAudio(),
-        ["cycle-subtitles"]  = args => CycleSubtitles(),
-        ["playlist-first"]   = args => PlaylistFirst(),
-        ["playlist-last"]    = args => PlaylistLast(),
+        ["play-pause"] = PlayPause,
+        ["shell-execute"] = args => ProcessHelp.ShellExecute(args[0]),
+        ["show-text"] = args => ShowText(args[0], Convert.ToInt32(args[1]), Convert.ToInt32(args[2])),
+        ["cycle-audio"] = args => CycleAudio(),
+        ["cycle-subtitles"] = args => CycleSubtitles(),
+        ["playlist-first"] = args => PlaylistFirst(),
+        ["playlist-last"] = args => PlaylistLast(),
+
+
+        // deprecated
+        ["playlist-add"] = args => PlaylistAdd(Convert.ToInt32(args[0])), // deprecated
+        ["show-progress"] = args => Player.Command("show-progress"), // deprecated
+        ["playlist-random"] = args => PlaylistRandom(), // deprecated
     };
 
-    private static void PlayPause(IList<string> args)
+    string FormatTime(double value) => ((int)value).ToString("00");
+
+    void PlayPause(IList<string> args)
     {
-        var count = Player.GetPropertyInt("playlist-count");
+        int count = Player.GetPropertyInt("playlist-count");
 
         if (count > 0)
             Player.Command("cycle pause");
         else if (App.Settings.RecentFiles.Count > 0)
         {
-            foreach (var i in App.Settings.RecentFiles.Where(i => i.Contains("://") || File.Exists(i)))
+            foreach (string i in App.Settings.RecentFiles)
             {
-                Player.LoadFiles(new[] { i }, true, false);
-                break;
+                if (i.Contains("://") || File.Exists(i))
+                {
+                    Player.LoadFiles(new[] { i }, true, false);
+                    break;
+                }
             }
         }
     }
@@ -48,16 +61,16 @@ public class Command
             fontSize = Player.GetPropertyInt("osd-font-size");
 
         Player.Command("show-text \"${osd-ass-cc/0}{\\\\fs" + fontSize +
-                       "}${osd-ass-cc/1}"                   + text     + "\" " + duration);
+            "}${osd-ass-cc/1}" + text + "\" " + duration);
     }
 
-    private static void CycleAudio()
+    void CycleAudio()
     {
         Player.UpdateExternalTracks();
 
         lock (Player.MediaTracksLock)
         {
-            var tracks = Player.MediaTracks.Where(track => track.Type == "a").ToArray();
+            MediaTrack[] tracks = Player.MediaTracks.Where(track => track.Type == "a").ToArray();
 
             if (tracks.Length < 1)
             {
@@ -65,7 +78,7 @@ public class Command
                 return;
             }
 
-            var aid = Player.GetPropertyInt("aid");
+            int aid = Player.GetPropertyInt("aid");
 
             if (tracks.Length > 1)
             {
@@ -79,13 +92,13 @@ public class Command
         }
     }
 
-    private static void CycleSubtitles()
+    void CycleSubtitles()
     {
         Player.UpdateExternalTracks();
 
         lock (Player.MediaTracksLock)
         {
-            var tracks = Player.MediaTracks.Where(track => track.Type == "s").ToArray();
+            MediaTrack[] tracks = Player.MediaTracks.Where(track => track.Type == "s").ToArray();
 
             if (tracks.Length < 1)
             {
@@ -93,7 +106,7 @@ public class Command
                 return;
             }
 
-            var sid = Player.GetPropertyInt("sid");
+            int sid = Player.GetPropertyInt("sid");
 
             if (tracks.Length > 1)
             {
@@ -110,17 +123,59 @@ public class Command
         }
     }
 
-    private static void PlaylistFirst()
+    // deprecated
+    void PlaylistAdd(int value)
+    {
+        int pos = Player.PlaylistPos;
+        int count = Player.GetPropertyInt("playlist-count");
+
+        if (count < 2)
+            return;
+
+        pos += value;
+
+        if (pos < 0)
+            pos = count - 1;
+
+        if (pos > count - 1)
+            pos = 0;
+
+        Player.SetPropertyInt("playlist-pos", pos);
+    }
+
+    void PlaylistFirst()
     {
         if (Player.PlaylistPos != 0)
             Player.SetPropertyInt("playlist-pos", 0);
     }
 
-    private static void PlaylistLast()
+    void PlaylistLast()
     {
-        var count = Player.GetPropertyInt("playlist-count");
+        int count = Player.GetPropertyInt("playlist-count");
 
         if (Player.PlaylistPos < count - 1)
             Player.SetPropertyInt("playlist-pos", count - 1);
+    }
+
+    // deprecated
+    void PlaylistRandom()
+    {
+        int count = Player.GetPropertyInt("playlist-count");
+        Player.SetPropertyInt("playlist-pos", new Random().Next(count));
+    }
+
+    // deprecated
+    void ShowProgress()
+    {
+        TimeSpan position = TimeSpan.FromSeconds(Player.GetPropertyDouble("time-pos"));
+        TimeSpan duration = TimeSpan.FromSeconds(Player.GetPropertyDouble("duration"));
+
+        string text = FormatTime(position.TotalMinutes) + ":" +
+                      FormatTime(position.Seconds) + " / " +
+                      FormatTime(duration.TotalMinutes) + ":" +
+                      FormatTime(duration.Seconds) + "    " +
+                      DateTime.Now.ToString("H:mm dddd d MMMM", CultureInfo.InvariantCulture);
+
+        Player.CommandV("show-text", text, "5000");
     }
 }

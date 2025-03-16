@@ -1,17 +1,18 @@
-using MpvNet.Windows.Help;
-using MpvNet.Windows.Native;
+﻿
 using System.Drawing;
 using System.Runtime.InteropServices;
 using System.Windows.Forms;
+using MpvNet.Windows.Help;
+using MpvNet.Windows.Native;
 
 namespace MpvNet.Windows.WinForms;
 
 public class SnapManager
 {
-    private int DragOffsetX { get; set; }
-    private int DragOffsetY { get; set; }
+    int DragOffsetX { get; set; }
+    int DragOffsetY { get; set; }
 
-    private IntPtr _handle;
+    IntPtr Handle;
 
     [Flags]
     public enum SnapLocation
@@ -21,19 +22,19 @@ public class SnapManager
         Top    = 1 << 1,
         Right  = 1 << 2,
         Bottom = 1 << 3,
-        All    = Left | Top | Right | Bottom
+        All = Left | Top | Right | Bottom
     }
 
     public int AnchorDistance { get; set; }
 
     public int SnapDistance { get; set; }
 
-    private bool InSnapRange(int a, int b) => Math.Abs(a - b) < SnapDistance;
+    bool InSnapRange(int a, int b) => Math.Abs(a - b) < SnapDistance;
 
-    private void FindSnap(ref Rectangle effectiveBounds)
+    void FindSnap(ref Rectangle effectiveBounds)
     {
-        var currentScreen = Screen.FromPoint(effectiveBounds.Location);
-        var workingArea   = WinApiHelp.GetWorkingArea(_handle, currentScreen.WorkingArea);
+        Screen currentScreen = Screen.FromPoint(effectiveBounds.Location);
+        Rectangle workingArea = WinApiHelp.GetWorkingArea(Handle, currentScreen.WorkingArea);
 
         if (InSnapRange(effectiveBounds.Left, workingArea.Left + AnchorDistance))
             effectiveBounds.X = workingArea.Left + AnchorDistance;
@@ -47,24 +48,28 @@ public class SnapManager
 
     public void OnMoving(ref Message m)
     {
-        if (_handle == IntPtr.Zero)
+        if (Handle == IntPtr.Zero)
             return;
 
-        var boundsLtrb = Marshal.PtrToStructure<WinApi.RECT>(m.LParam);
-        var bounds     = boundsLtrb.ToRectangle();
+        WinApi.RECT boundsLtrb = Marshal.PtrToStructure<WinApi.RECT>(m.LParam);
+        Rectangle bounds = boundsLtrb.ToRectangle();
         // This is where the window _would_ be located if snapping
         // had not occurred. This prevents the cursor from sliding
         // off the title bar if the snap distance is too large.
-        var effectiveBounds = bounds with { X = Cursor.Position.X - DragOffsetX, Y = Cursor.Position.Y - DragOffsetY };
+        Rectangle effectiveBounds = new Rectangle(
+            Cursor.Position.X - DragOffsetX,
+            Cursor.Position.Y - DragOffsetY,
+            bounds.Width,
+            bounds.Height);
         FindSnap(ref effectiveBounds);
-        var newLtrb = WinApi.RECT.FromRectangle(effectiveBounds);
+        WinApi.RECT newLtrb = WinApi.RECT.FromRectangle(effectiveBounds);
         Marshal.StructureToPtr(newLtrb, m.LParam, false);
         m.Result = new IntPtr(1);
     }
 
     public void OnSizeAndEnterSizeMove(Form form)
     {
-        _handle      = form.Handle;
+        Handle = form.Handle;
         SnapDistance = form.Font.Height;
         // Need to handle window size changed as well when
         // un-maximizing the form by dragging the title bar.

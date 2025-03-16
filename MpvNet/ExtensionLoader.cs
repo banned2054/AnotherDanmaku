@@ -1,5 +1,7 @@
-using MpvNet.ExtensionMethod;
+﻿
 using System.Reflection;
+
+using MpvNet.ExtensionMethod;
 
 namespace MpvNet;
 
@@ -9,14 +11,14 @@ public class ExtensionLoader
 
     readonly List<object?> _refs = new();
 
-    private void LoadDll(string path)
+    void LoadDll(string path)
     {
         if (!File.Exists(path))
             return;
 
         try
         {
-            var asm  = Assembly.LoadFile(path);
+            Assembly asm = Assembly.LoadFile(path);
             var type = asm.GetTypes().Where(typeof(IExtension).IsAssignableFrom).First();
             _refs.Add(Activator.CreateInstance(type));
         }
@@ -28,9 +30,9 @@ public class ExtensionLoader
 
     public void LoadFolder(string path)
     {
-        if (!Directory.Exists(path)) return;
-        foreach (var dir in Directory.GetDirectories(path))
-            LoadDll(dir.AddSep() + Path.GetFileName(dir) + ".dll");
+        if (Directory.Exists(path))
+            foreach (string dir in Directory.GetDirectories(path))
+                LoadDll(dir.AddSep() + Path.GetFileName(dir) + ".dll");
     }
 }
 

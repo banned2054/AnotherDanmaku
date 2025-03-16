@@ -6,7 +6,7 @@
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     mc:Ignorable="d"
-
+    
     Title="Input Editor"
     Height="500"
     Width="800"
@@ -16,8 +16,9 @@
     Background="{Binding Theme.Background}"
     Loaded="Window_Loaded"
     Closed="Window_Closed"
-    StateChanged="Window_StateChanged">
-
+    StateChanged="Window_StateChanged"
+    >
+    
     <Window.Resources>
         <Style x:Key="HeaderStyle" TargetType="DataGridColumnHeader">
             <Setter Property="Background" Value="{DynamicResource RegionBrush}" />
@@ -38,8 +39,9 @@
             x:Name="SearchControl"
             Width="300"
             Margin="0,20,0,20"
-            Grid.ColumnSpan="2" />
-
+            Grid.ColumnSpan="2" 
+            />
+       
         <DataGrid
             Name="DataGrid"
             Grid.Row="1"
@@ -54,19 +56,18 @@
             CanUserSortColumns="False"
             SelectionUnit="Cell"
             BeginningEdit="DataGrid_BeginningEdit"
-            SelectedCellsChanged="DataGrid_SelectedCellsChanged">
+            SelectedCellsChanged="DataGrid_SelectedCellsChanged"
+            >
 
             <DataGrid.Resources>
-                <Style BasedOn="{StaticResource {x:Type DataGridColumnHeader}}"
-                       TargetType="{x:Type DataGridColumnHeader}">
+                <Style BasedOn="{StaticResource {x:Type DataGridColumnHeader}}" TargetType="{x:Type DataGridColumnHeader}">
                     <Setter Property="Background" Value="{Binding DataContext.Theme.Background, ElementName=DataGrid}" />
                 </Style>
-                <SolidColorBrush x:Key="{x:Static SystemColors.HighlightBrushKey}"
-                                 Color="{Binding RelativeSource={RelativeSource FindAncestor, AncestorType={x:Type Window}}, Path=DataContext.Theme.MenuHighlightColor}" />
+                <SolidColorBrush x:Key="{x:Static SystemColors.HighlightBrushKey}" Color="{Binding RelativeSource={RelativeSource FindAncestor, AncestorType={x:Type Window}}, Path=DataContext.Theme.MenuHighlightColor}"/>
             </DataGrid.Resources>
 
             <DataGrid.CellStyle>
-                <Style TargetType="DataGridCell">
+                <Style TargetType="DataGridCell" >
                     <Setter Property="Padding" Value="2" />
                     <Setter Property="BorderThickness" Value="0" />
                     <Setter Property="Template">
@@ -77,33 +78,37 @@
                                     BorderBrush="{TemplateBinding BorderBrush}"
                                     BorderThickness="{TemplateBinding BorderThickness}"
                                     Background="{TemplateBinding Background}"
-                                    SnapsToDevicePixels="True">
+                                    SnapsToDevicePixels="True"
+                                    >
                                     <ContentPresenter
-                                        SnapsToDevicePixels="{TemplateBinding SnapsToDevicePixels}" />
+                                        SnapsToDevicePixels="{TemplateBinding SnapsToDevicePixels}"
+                                        />
                                 </Border>
                             </ControlTemplate>
                         </Setter.Value>
                     </Setter>
                 </Style>
             </DataGrid.CellStyle>
-
+            
             <DataGrid.Columns>
                 <DataGridTextColumn
                     Header="Name"
                     Binding="{Binding Comment}"
-                    MaxWidth="322" />
-
+                    MaxWidth="322"
+                    />
+                
                 <DataGridTextColumn
                     Header="Input"
-                    Binding="{Binding Input}">
-
+                    Binding="{Binding Input}"
+                    >
+                    
                     <DataGridTextColumn.CellStyle>
                         <Style TargetType="DataGridCell">
                             <Setter Property="TextBlock.TextAlignment" Value="Center" />
-                            <Setter Property="BorderThickness" Value="0" />
+                            <Setter Property="BorderThickness" Value="0"/>
                             <Setter Property="Padding" Value="2" />
-                            <EventSetter Event="PreviewKeyDown" Handler="DataGridCell_PreviewKeyDown" />
-                            <EventSetter Event="MouseLeftButtonUp" Handler="DataGridCell_MouseLeftButtonUp" />
+                            <EventSetter Event="PreviewKeyDown" Handler="DataGridCell_PreviewKeyDown"/>
+                            <EventSetter Event="MouseLeftButtonUp" Handler="DataGridCell_MouseLeftButtonUp"/>
                             <Setter Property="Template">
                                 <Setter.Value>
                                     <ControlTemplate TargetType="{x:Type DataGridCell}">
@@ -112,17 +117,18 @@
                                             BorderBrush="{TemplateBinding BorderBrush}"
                                             BorderThickness="{TemplateBinding BorderThickness}"
                                             Background="{TemplateBinding Background}"
-                                            SnapsToDevicePixels="True">
+                                            SnapsToDevicePixels="True"
+                                            >
                                             <ContentPresenter
-                                                SnapsToDevicePixels="{TemplateBinding SnapsToDevicePixels}" />
+                                                SnapsToDevicePixels="{TemplateBinding SnapsToDevicePixels}"
+                                                />
                                         </Border>
                                     </ControlTemplate>
                                 </Setter.Value>
                             </Setter>
                             <Style.Triggers>
                                 <Trigger Property="IsMouseOver" Value="True">
-                                    <Setter Property="Background"
-                                            Value="{Binding DataContext.Theme.MenuHighlight, ElementName=DataGrid}" />
+                                    <Setter Property="Background" Value="{Binding DataContext.Theme.MenuHighlight, ElementName=DataGrid}" />
                                 </Trigger>
                             </Style.Triggers>
                         </Style>
@@ -133,7 +139,8 @@
                     Header="Command"
                     x:Name="CommandColumn"
                     Binding="{Binding Command}"
-                    MaxWidth="322" />
+                    MaxWidth="322"
+                    />
             </DataGrid.Columns>
         </DataGrid>
     </Grid>

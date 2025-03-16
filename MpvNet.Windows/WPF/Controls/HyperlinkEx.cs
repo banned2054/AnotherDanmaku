@@ -1,21 +1,23 @@
+﻿
 using System.Windows.Documents;
 using System.Windows.Navigation;
+
 using MpvNet.Help;
 
-namespace MpvNet.Windows.WPF.Controls;
+namespace MpvNet.Windows.WPF;
 
 public class HyperlinkEx : Hyperlink
 {
-    private static void HyperLinkExRequestNavigate(object sender, RequestNavigateEventArgs e) =>
+    void HyperLinkEx_RequestNavigate(object sender, RequestNavigateEventArgs e) =>
         ProcessHelp.ShellExecute(e.Uri.AbsoluteUri);
 
-    public void SetUrl(string? url)
+    public void SetURL(string? url)
     {
         if (string.IsNullOrEmpty(url))
             return;
 
-        NavigateUri     =  new Uri(url);
-        RequestNavigate += HyperLinkExRequestNavigate;
+        NavigateUri = new Uri(url);
+        RequestNavigate += HyperLinkEx_RequestNavigate;
         Inlines.Clear();
         Inlines.Add("Manual");
     }

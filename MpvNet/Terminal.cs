@@ -1,15 +1,17 @@
+﻿
 namespace MpvNet;
 
 public static class Terminal
 {
-    private static int Padding => 60;
+    static int Padding { get; } = 60;
 
-    public static void WriteError(object obj, string module = "mpv.net") =>
-        Write(obj, module, ConsoleColor.DarkRed, false);
+    public static void WriteError(object obj, string module = "mpv.net") => Write(obj, module, ConsoleColor.DarkRed, false);
+
+    public static void Write(object obj, string module = "mpv.net") => Write(obj, module, ConsoleColor.Black, true);
 
     public static void Write(object obj, string module, ConsoleColor color, bool useDefaultColor)
     {
-        var text = obj + "";
+        string text = obj + "";
 
         if (text == "")
             return;
@@ -27,7 +29,7 @@ public static class Terminal
         if (text.Length < Padding)
             text = text.PadRight(Padding);
 
-        if (color is ConsoleColor.Red or ConsoleColor.DarkRed)
+        if (color == ConsoleColor.Red || color == ConsoleColor.DarkRed)
             Console.Error.WriteLine(text);
         else
             Console.WriteLine(text);

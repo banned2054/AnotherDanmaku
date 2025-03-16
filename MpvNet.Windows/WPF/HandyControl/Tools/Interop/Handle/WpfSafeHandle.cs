@@ -1,7 +1,7 @@
-using System.Security;
+﻿using System.Security;
 using Microsoft.Win32.SafeHandles;
 
-namespace MpvNet.Windows.WPF.HandyControl.Tools.Interop.Handle
+namespace HandyControl.Tools.Interop
 {
     internal abstract class WpfSafeHandle : SafeHandleZeroOrMinusOneIsInvalid
     {

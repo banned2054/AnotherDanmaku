@@ -1,4 +1,4 @@
-using MpvNet.Help;
+﻿
 using System.ComponentModel;
 using System.Drawing;
 using System.Globalization;
@@ -12,218 +12,266 @@ using System.Windows.Interop;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
 
+using MpvNet.Help;
+
 namespace MpvNet.Windows.WPF.MsgBox;
 
-public sealed partial class MessageBoxEx
+public partial class MessageBoxEx : Window, INotifyPropertyChanged
 {
     #region INotifyPropertyChanged
 
-    private bool _isModified;
+    private bool isModified = false;
 
-    public bool IsModified
-    {
-        get => _isModified;
-        set
-        {
-            if (value == _isModified) return;
-            _isModified = true;
-            NotifyPropertyChanged();
+    public bool IsModified {
+        get { return isModified; }
+        set {
+            if (value != isModified)
+            {
+                isModified = true;
+                NotifyPropertyChanged();
+            }
         }
     }
 
     public event PropertyChangedEventHandler? PropertyChanged;
 
-    private void NotifyPropertyChanged([CallerMemberName] string propertyName = "")
+    protected void NotifyPropertyChanged([CallerMemberName] string propertyName = "")
     {
-        if (PropertyChanged == null) return;
-        PropertyChanged(this, new PropertyChangedEventArgs(propertyName));
+        if (PropertyChanged != null)
+        {
+            PropertyChanged(this, new PropertyChangedEventArgs(propertyName));
 
-        if (propertyName != "IsModified")
-            IsModified = true;
+            if (propertyName != "IsModified")
+                IsModified = true;
+        }
     }
 
     #endregion INotifyPropertyChanged
 
     #region fields
 
-    private string?             _message;
-    private string?             _messageTitle;
-    private MessageBoxButton?   _buttons;
-    private MessageBoxButtonEx? _buttonsEx;
-    private ImageSource?        _messageIcon;
-    private MessageBoxImage     _msgBoxImage;
-    private double              _buttonWidth;
-    private bool                _expanded;
-    private bool                _isDefaultOk;
-    private bool                _isDefaultCancel;
-    private bool                _isDefaultYes;
-    private bool                _isDefaultNo;
-    private bool                _isDefaultAbort;
-    private bool                _isDefaultRetry;
-    private bool                _isDefaultIgnore;
-    private bool                _usingExButtons;
+    private string? message;
+    private string? messageTitle;
+    private MessageBoxButton? buttons;
+    private MessageBoxResult messageResult;
+    private MessageBoxButtonEx? buttonsEx;
+    private MessageBoxResultEx messageResultEx;
+    private ImageSource? messageIcon;
+    private MessageBoxImage msgBoxImage;
+    private double buttonWidth = 0d;
+    private bool expanded = false;
+    private bool isDefaultOK;
+    private bool isDefaultCancel;
+    private bool isDefaultYes;
+    private bool isDefaultNo;
+    private bool isDefaultAbort;
+    private bool isDefaultRetry;
+    private bool isDefaultIgnore;
+
+    private bool usingExButtons = false;
 
     #endregion fields
 
     #region properties
 
-    public string Message
-    {
-        get => _message!;
-        set
-        {
-            if (value == _message) return;
-            _message = value;
-            NotifyPropertyChanged();
+    public string Message {
+        get { return message; }
+        set {
+            if (value != message)
+            {
+                message = value;
+                NotifyPropertyChanged();
+            }
         }
     }
 
-    public string MessageTitle
-    {
-        get => _messageTitle!;
-        set
-        {
-            if (value == _messageTitle) return;
-            _messageTitle = value;
-            NotifyPropertyChanged();
+    public string MessageTitle {
+        get { return messageTitle; }
+        set {
+            if (value != messageTitle)
+            {
+                messageTitle = value;
+                NotifyPropertyChanged();
+            }
         }
     }
 
-    public MessageBoxResult MessageResult { get; set; }
+    public MessageBoxResult MessageResult { get { return this.messageResult; } set { this.messageResult = value; } }
+    public MessageBoxResultEx MessageResultEx { get { return this.messageResultEx; } set { this.messageResultEx = value; } }
 
-    public MessageBoxResultEx MessageResultEx { get; set; }
-
-    public MessageBoxButton? Buttons
-    {
-        get => _buttons;
-        set
-        {
-            if (value == _buttons) return;
-            _buttons = value;
-            NotifyPropertyChanged();
-            NotifyPropertyChanged("ShowOk");
-            NotifyPropertyChanged("ShowCancel");
-            NotifyPropertyChanged("ShowYes");
-            NotifyPropertyChanged("ShowNo");
+    public MessageBoxButton? Buttons {
+        get { return buttons; }
+        set {
+            if (value != buttons)
+            {
+                buttons = value;
+                NotifyPropertyChanged();
+                NotifyPropertyChanged("ShowOk");
+                NotifyPropertyChanged("ShowCancel");
+                NotifyPropertyChanged("ShowYes");
+                NotifyPropertyChanged("ShowNo");
+            }
+        }
+    }
+    public MessageBoxButtonEx? ButtonsEx {
+        get { return buttonsEx; }
+        set {
+            if (value != buttonsEx)
+            {
+                buttonsEx = value;
+                NotifyPropertyChanged();
+                NotifyPropertyChanged("ShowOk");
+                NotifyPropertyChanged("ShowCancel");
+                NotifyPropertyChanged("ShowYes");
+                NotifyPropertyChanged("ShowNo");
+                NotifyPropertyChanged("ShowAbort");
+                NotifyPropertyChanged("ShowRetry");
+                NotifyPropertyChanged("ShowIgnore");
+            }
         }
     }
 
-    public MessageBoxButtonEx? ButtonsEx
-    {
-        get => _buttonsEx;
-        set
-        {
-            if (value == _buttonsEx) return;
-            _buttonsEx = value;
-            NotifyPropertyChanged();
-            NotifyPropertyChanged("ShowOk");
-            NotifyPropertyChanged("ShowCancel");
-            NotifyPropertyChanged("ShowYes");
-            NotifyPropertyChanged("ShowNo");
-            NotifyPropertyChanged("ShowAbort");
-            NotifyPropertyChanged("ShowRetry");
-            NotifyPropertyChanged("ShowIgnore");
+    public Visibility ShowOk => (!usingExButtons && Buttons == MessageBoxButton.OK ||
+        !usingExButtons && Buttons == MessageBoxButton.OKCancel ||
+        usingExButtons && ButtonsEx == MessageBoxButtonEx.OK ||
+        usingExButtons && ButtonsEx == MessageBoxButtonEx.OKCancel) ? Visibility.Visible : Visibility.Collapsed;
+
+    public Visibility ShowCancel => (!usingExButtons && Buttons == MessageBoxButton.OKCancel ||
+        !usingExButtons && Buttons == MessageBoxButton.YesNoCancel ||
+        usingExButtons && ButtonsEx == MessageBoxButtonEx.OKCancel ||
+        usingExButtons && ButtonsEx == MessageBoxButtonEx.YesNoCancel ||
+        usingExButtons && ButtonsEx == MessageBoxButtonEx.RetryCancel) ? Visibility.Visible : Visibility.Collapsed;
+
+    public Visibility ShowYes => (!usingExButtons && Buttons == MessageBoxButton.YesNo ||
+        !usingExButtons && Buttons == MessageBoxButton.YesNoCancel ||
+        usingExButtons && ButtonsEx == MessageBoxButtonEx.YesNo ||
+        usingExButtons && ButtonsEx == MessageBoxButtonEx.YesNoCancel) ? Visibility.Visible : Visibility.Collapsed;
+
+    public Visibility ShowNo => (!usingExButtons && Buttons == MessageBoxButton.YesNo ||
+        !usingExButtons && Buttons == MessageBoxButton.YesNoCancel ||
+        usingExButtons && ButtonsEx == MessageBoxButtonEx.YesNo ||
+        usingExButtons && ButtonsEx == MessageBoxButtonEx.YesNoCancel) ? Visibility.Visible : Visibility.Collapsed;
+
+    public Visibility ShowRetry => (usingExButtons && ButtonsEx == MessageBoxButtonEx.AbortRetryIgnore ||
+        usingExButtons && ButtonsEx == MessageBoxButtonEx.RetryCancel) ? Visibility.Visible : Visibility.Collapsed;
+
+    public Visibility ShowAbort => (usingExButtons && ButtonsEx == MessageBoxButtonEx.AbortRetryIgnore)
+        ? Visibility.Visible
+        : Visibility.Collapsed;
+
+    public Visibility ShowIgnore => (usingExButtons && ButtonsEx == MessageBoxButtonEx.AbortRetryIgnore)
+        ? Visibility.Visible
+        : Visibility.Collapsed;
+
+    public Visibility ShowIcon => (MessageIcon != null) ? Visibility.Visible : Visibility.Collapsed;
+
+    public ImageSource? MessageIcon {
+        get => messageIcon;
+        set {
+            if (value != messageIcon)
+            {
+                messageIcon = value;
+                NotifyPropertyChanged();
+            }
         }
     }
 
-    public ImageSource? MessageIcon
-    {
-        get => _messageIcon;
-        set
-        {
-            if (value == _messageIcon) return;
-            _messageIcon = value;
-            NotifyPropertyChanged();
+    public double ButtonWidth {
+        get => buttonWidth;
+        set {
+            if (value != buttonWidth)
+            { 
+                buttonWidth = value; 
+                NotifyPropertyChanged();
+            } 
         }
     }
 
-    public double ButtonWidth
-    {
-        get => _buttonWidth;
-        set
-        {
-            if (value == _buttonWidth) return;
-            _buttonWidth = value;
-            NotifyPropertyChanged();
+    public bool Expanded {
+        get => expanded;
+        set {
+            if (value != expanded)
+            {
+                expanded = value;
+                NotifyPropertyChanged();
+            }
         }
     }
 
-    public bool IsDefaultOk
-    {
-        get => _isDefaultOk;
-        set
-        {
-            if (value == _isDefaultOk) return;
-            _isDefaultOk = value;
-            NotifyPropertyChanged();
+    public bool IsDefaultOK {
+        get => isDefaultOK;
+        set {
+            if (value != isDefaultOK)
+            {
+                isDefaultOK = value;
+                NotifyPropertyChanged();
+            }
         }
     }
 
-    public bool IsDefaultCancel
-    {
-        get => _isDefaultCancel;
-        set
-        {
-            if (value == _isDefaultCancel) return;
-            _isDefaultCancel = value;
-            NotifyPropertyChanged();
+    public bool IsDefaultCancel {
+        get => isDefaultCancel;
+        set {
+            if (value != isDefaultCancel)
+            {
+                isDefaultCancel = value;
+                NotifyPropertyChanged();
+            }
         }
     }
 
-    public bool IsDefaultYes
-    {
-        get => _isDefaultYes;
-        set
-        {
-            if (value == _isDefaultYes) return;
-            _isDefaultYes = value;
-            NotifyPropertyChanged();
+    public bool IsDefaultYes {
+        get => isDefaultYes;
+        set {
+            if (value != isDefaultYes)
+            {
+                isDefaultYes = value;
+                NotifyPropertyChanged();
+            }
         }
     }
 
-    public bool IsDefaultNo
-    {
-        get => _isDefaultNo;
-        set
-        {
-            if (value == _isDefaultNo) return;
-            _isDefaultNo = value;
-            NotifyPropertyChanged();
+    public bool IsDefaultNo {
+        get => isDefaultNo;
+        set {
+            if (value != isDefaultNo)
+            {
+                isDefaultNo = value;
+                NotifyPropertyChanged();
+            }
         }
     }
 
-    public bool IsDefaultAbort
-    {
-        get => _isDefaultAbort;
-        set
-        {
-            if (value == _isDefaultAbort) return;
-            _isDefaultAbort = value;
-            NotifyPropertyChanged();
+    public bool IsDefaultAbort {
+        get => isDefaultAbort;
+        set {
+            if (value != isDefaultAbort)
+            {
+                isDefaultAbort = value;
+                NotifyPropertyChanged();
+            }
         }
     }
 
-    public bool IsDefaultRetry
-    {
-        get => _isDefaultRetry;
-        set
-        {
-            if (value == _isDefaultRetry) return;
-            _isDefaultRetry = value;
-            NotifyPropertyChanged();
+    public bool IsDefaultRetry {
+        get => isDefaultRetry;
+        set {
+            if (value != isDefaultRetry)
+            { isDefaultRetry = value; NotifyPropertyChanged(); }
         }
     }
 
-    public bool IsDefaultIgnore
-    {
-        get => _isDefaultIgnore;
-        set
-        {
-            if (value == _isDefaultIgnore) return;
-            _isDefaultIgnore = value;
-            NotifyPropertyChanged();
+    public bool IsDefaultIgnore {
+        get => isDefaultIgnore;
+        set {
+            if (value != isDefaultIgnore)
+            {
+                isDefaultIgnore = value;
+                NotifyPropertyChanged();
+            }
         }
     }
+
 
     #endregion properties
 
@@ -236,16 +284,16 @@ public sealed partial class MessageBoxEx
         LargestButtonWidth();
     }
 
-    public MessageBoxEx(string          msg, string title, MessageBoxButton buttons = MessageBoxButton.OK,
-                        MessageBoxImage image = MessageBoxImage.None)
+    public MessageBoxEx(string msg, string title, MessageBoxButton buttons = MessageBoxButton.OK,
+        MessageBoxImage image = MessageBoxImage.None)
     {
         InitializeComponent();
         DataContext = this;
         Init(msg, title, buttons, image);
     }
 
-    public MessageBoxEx(string          msg, string title, MessageBoxButtonEx buttons = MessageBoxButtonEx.OK,
-                        MessageBoxImage image = MessageBoxImage.None)
+    public MessageBoxEx(string msg, string title, MessageBoxButtonEx buttons = MessageBoxButtonEx.OK,
+        MessageBoxImage image = MessageBoxImage.None)
     {
         InitializeComponent();
         DataContext = this;
@@ -256,63 +304,65 @@ public sealed partial class MessageBoxEx
 
     #region non-static methods
 
-    private void Init(string msg, string title, MessageBoxButton buttons, MessageBoxImage image)
+    protected virtual void Init(string msg, string title, MessageBoxButton buttons, MessageBoxImage image)
     {
         InitTop(msg, title);
-        _usingExButtons = false;
-        ButtonsEx       = null;
-        Buttons         = buttons;
+        usingExButtons = false;
+        ButtonsEx = null;
+        Buttons = buttons;
         SetButtonTemplates();
         InitBottom(image);
         FindDefaultButton(staticButtonDefault);
     }
 
-    private void Init(string msg, string title, MessageBoxButtonEx buttons, MessageBoxImage image)
+    protected virtual void Init(string msg, string title, MessageBoxButtonEx buttons, MessageBoxImage image)
     {
         InitTop(msg, title);
-        _usingExButtons = true;
-        Buttons         = null;
-        ButtonsEx       = buttons;
+        usingExButtons = true;
+        Buttons = null;
+        ButtonsEx = buttons;
         SetButtonTemplates();
         InitBottom(image);
         FindDefaultButtonEx(staticButtonDefault);
     }
 
-    private void InitTop(string msg, string title)
+    void InitTop(string msg, string title)
     {
         // determine whether or not to show the details pane and checkbox
         ShowDetailsBtn = (string.IsNullOrEmpty(DetailsText)) ? Visibility.Collapsed : Visibility.Visible;
-        ShowCheckBox   = (CheckBoxData == null) ? Visibility.Collapsed : Visibility.Visible;
+        ShowCheckBox = (CheckBoxData == null) ? Visibility.Collapsed : Visibility.Visible;
 
         // Well, the binding for family/size don't appear to be working, so I have to set them 
         // manually. Weird...
         FontFamily = MsgFontFamily;
-        FontSize   = MsgFontSize;
+        FontSize = MsgFontSize;
         LargestButtonWidth();
 
         // configure the form based on specified criteria
-        Message      = msg;
+        Message = msg;
         MessageTitle = (string.IsNullOrEmpty(title.Trim())) ? "Application Message" : title;
 
         // url (if specified)
-        if (Url == null) return;
-        tbUrl.Text    = (string.IsNullOrEmpty(UrlDisplayName)) ? Url.ToString() : UrlDisplayName;
-        tbUrl.ToolTip = new ToolTip() { Content = Url.ToString() };
+        if (Url != null)
+        {
+            tbUrl.Text = (string.IsNullOrEmpty(UrlDisplayName)) ? Url.ToString() : UrlDisplayName;
+            tbUrl.ToolTip = new ToolTip() { Content = Url.ToString() };
+        }
     }
 
-    private void InitBottom(MessageBoxImage image)
+    void InitBottom(MessageBoxImage image)
     {
-        MessageBackground ??= new SolidColorBrush(Colors.White);
-        MessageForeground ??= new SolidColorBrush(Colors.Black);
-        ButtonBackground  ??= new SolidColorBrush(ColorFromString("#cdcdcd"));
+        MessageBackground = (MessageBackground == null) ? new SolidColorBrush(Colors.White) : MessageBackground;
+        MessageForeground = (MessageForeground == null) ? new SolidColorBrush(Colors.Black) : MessageForeground;
+        ButtonBackground = (ButtonBackground == null) ? new SolidColorBrush(ColorFromString("#cdcdcd")) : ButtonBackground;
 
         MessageIcon = null;
 
-        _msgBoxImage = image;
+        msgBoxImage = image;
 
         if (DelegateObj != null)
         {
-            var style = (Style)(FindResource("ImageOpacityChanger"));
+            Style style = (Style)(FindResource("ImageOpacityChanger"));
 
             if (style != null)
             {
@@ -320,8 +370,7 @@ public sealed partial class MessageBoxEx
 
                 if (!string.IsNullOrEmpty(DelegateToolTip))
                 {
-                    var tooltip = new ToolTip()
-                        { Content = DelegateToolTip };
+                    System.Windows.Controls.ToolTip tooltip = new System.Windows.Controls.ToolTip() { Content = DelegateToolTip };
                     // for some reason, Image elements can't do tooltips, so I assign the tootip 
                     // to the parent grid. This seems to work fine.
                     imgGrid.ToolTip = tooltip;
@@ -333,43 +382,43 @@ public sealed partial class MessageBoxEx
         // WTF Microsoft? 
         switch ((int)image)
         {
-            case 16 : // MessageBoxImage.Error, MessageBoxImage.Stop, MessageBox.Image.Hand
-            {
-                MessageIcon = GetIcon(SystemIcons.Error);
+            case 16: // MessageBoxImage.Error, MessageBoxImage.Stop, MessageBox.Image.Hand
+                {
+                    MessageIcon = GetIcon(SystemIcons.Error);
 
-                if (!isSilent)
-                    SystemSounds.Hand.Play();
-            }
+                    if (!isSilent)
+                        SystemSounds.Hand.Play();
+                }
                 break;
 
-            case 64 : // MessageBoxImage.Information, MessageBoxImage.Asterisk 
-            {
-                MessageIcon = GetIcon(SystemIcons.Information);
+            case 64: // MessageBoxImage.Information, MessageBoxImage.Asterisk 
+                {
+                    MessageIcon = GetIcon(SystemIcons.Information);
 
-                if (!isSilent)
-                    SystemSounds.Asterisk.Play();
-            }
+                    if (!isSilent)
+                        SystemSounds.Asterisk.Play();
+                }
                 break;
 
-            case 32 : // MessageBoxImage.Question
-            {
-                MessageIcon = GetIcon(SystemIcons.Question);
+            case 32: // MessageBoxImage.Question
+                {
+                    MessageIcon = GetIcon(SystemIcons.Question);
 
-                if (!isSilent)
-                    SystemSounds.Question.Play();
-            }
+                    if (!isSilent)
+                        SystemSounds.Question.Play();
+                }
                 break;
 
-            case 48 : // MessageBoxImage.Warning, MessageBoxImage.Exclamation
-            {
-                MessageIcon = GetIcon(SystemIcons.Warning);
+            case 48: // MessageBoxImage.Warning, MessageBoxImage.Exclamation
+                {
+                    MessageIcon = GetIcon(SystemIcons.Warning);
 
-                if (!isSilent)
-                    SystemSounds.Exclamation.Play();
-            }
+                    if (!isSilent)
+                        SystemSounds.Exclamation.Play();
+                }
                 break;
 
-            default :
+            default:
                 MessageIcon = null;
                 break;
         }
@@ -377,326 +426,301 @@ public sealed partial class MessageBoxEx
 
     public ImageSource GetIcon(Icon icon)
     {
-        var image = Imaging.CreateBitmapSourceFromHIcon(
-                                                        icon.Handle, Int32Rect.Empty,
-                                                        BitmapSizeOptions.FromEmptyOptions());
+        BitmapSource image = Imaging.CreateBitmapSourceFromHIcon(
+            icon.Handle, Int32Rect.Empty, BitmapSizeOptions.FromEmptyOptions());
         return image;
     }
 
-    private void CenterInScreen()
+    protected virtual void CenterInScreen()
     {
-        var width  = ActualWidth;
-        var height = ActualHeight;
-        Left = (SystemParameters.WorkArea.Width  - width)  / 2 + SystemParameters.WorkArea.Left;
-        Top  = (SystemParameters.WorkArea.Height - height) / 2 + SystemParameters.WorkArea.Top;
+        double width = ActualWidth;
+        double height = ActualHeight;
+        Left = (SystemParameters.WorkArea.Width - width) / 2 + SystemParameters.WorkArea.Left;
+        Top = (SystemParameters.WorkArea.Height - height) / 2 + SystemParameters.WorkArea.Top;
     }
 
-    private void LargestButtonWidth()
+    protected void LargestButtonWidth()
     {
-        var typeface = new Typeface(FontFamily, FontStyle, FontWeight, FontStretch);
+        Typeface typeface = new Typeface(FontFamily, FontStyle, FontWeight, FontStretch);
 
-        var    panel = (StackPanel)stackButtons.Child;
+        StackPanel panel = (StackPanel)stackButtons.Child;
         double width = 0;
-        foreach (Button button in panel.Children)
+        string largestName = string.Empty;
+        foreach (System.Windows.Controls.Button button in panel.Children)
         {
             // Using the FormattedText object 
             // will strip whitespace before measuring the text, so we convert spaces to double 
             // hyphens to compensate (I like to pad button Content with a leading and trailing 
             // space) so that the button is wide enough to present a more padded appearance.
-            var formattedText = new FormattedText(
-                                                  (button.Name == "btnDetails")
-                                                      ? "--Details--"
-                                                      : ((string)(button.Content)).Replace(" ", "--"),
-                                                  CultureInfo.CurrentUICulture,
-                                                  FlowDirection.LeftToRight,
-                                                  typeface,
-                                                  FontSize = FontSize,
-                                                  System.Windows.Media.Brushes.Black,
-                                                  VisualTreeHelper.GetDpi(this).PixelsPerDip);
+            FormattedText formattedText = new FormattedText(
+                (button.Name == "btnDetails") ? "--Details--" : ((string)(button.Content)).Replace(" ", "--"),
+                CultureInfo.CurrentUICulture,
+                System.Windows.FlowDirection.LeftToRight,
+                typeface,
+                FontSize = FontSize,
+                System.Windows.Media.Brushes.Black,
+                VisualTreeHelper.GetDpi(this).PixelsPerDip);
 
             if (width < formattedText.Width)
-            {
-            }
+                largestName = button.Name;
 
             width = Math.Max(width, formattedText.Width);
         }
-
-        ButtonWidth = Math.Ceiling(width /*width + polyArrow.Width+polyArrow.Margin.Right+Margin.Left*/);
+        ButtonWidth = Math.Ceiling(width/*width + polyArrow.Width+polyArrow.Margin.Right+Margin.Left*/);
     }
 
-    private void SetButtonTemplates()
+    void SetButtonTemplates()
     {
         // set the button template (if specified)
-        if (string.IsNullOrEmpty(ButtonTemplateName)) return;
-        var foundResource = true;
-
-        try
+        if (!string.IsNullOrEmpty(ButtonTemplateName))
         {
-            FindResource(ButtonTemplateName);
-        }
-        catch (Exception)
-        {
-            foundResource = false;
-        }
+            bool foundResource = true;
 
-        if (!foundResource) return;
-        btnOK.SetResourceReference(TemplateProperty, ButtonTemplateName);
-        btnYes.SetResourceReference(TemplateProperty, ButtonTemplateName);
-        btnNo.SetResourceReference(TemplateProperty, ButtonTemplateName);
-        btnCancel.SetResourceReference(TemplateProperty, ButtonTemplateName);
-        btnAbort.SetResourceReference(TemplateProperty, ButtonTemplateName);
-        btnRetry.SetResourceReference(TemplateProperty, ButtonTemplateName);
-        btnIgnore.SetResourceReference(TemplateProperty, ButtonTemplateName);
-    }
+            try
+            {
+                FindResource(ButtonTemplateName);
+            }
+            catch (Exception)
+            {
+                foundResource = false;
+            }
 
-    private void FindDefaultButtonEx(MessageBoxButtonDefault buttonDefault)
-    {
-        // determine default button
-        IsDefaultOk     = false;
-        IsDefaultCancel = false;
-        IsDefaultYes    = false;
-        IsDefaultNo     = false;
-        IsDefaultAbort  = false;
-        IsDefaultRetry  = false;
-        IsDefaultIgnore = false;
-
-        if (buttonDefault == MessageBoxButtonDefault.None) return;
-        switch (ButtonsEx)
-        {
-            case MessageBoxButtonEx.OK :
-                IsDefaultOk = true;
-                break;
-            case MessageBoxButtonEx.OKCancel :
+            if (foundResource)
             {
-                switch (buttonDefault)
-                {
-                    case MessageBoxButtonDefault.Button1 :
-                    case MessageBoxButtonDefault.OK :
-                    case MessageBoxButtonDefault.MostPositive :
-                        IsDefaultOk = true;
-                        break;
-                    case MessageBoxButtonDefault.Button2 :
-                    case MessageBoxButtonDefault.Cancel :
-                    case MessageBoxButtonDefault.LeastPositive :
-                        IsDefaultCancel = true;
-                        break;
-                    case MessageBoxButtonDefault.Forms :
-                    default :
-                        IsDefaultOk = true;
-                        break;
-                }
+                btnOK.SetResourceReference(Control.TemplateProperty, ButtonTemplateName);
+                btnYes.SetResourceReference(Control.TemplateProperty, ButtonTemplateName);
+                btnNo.SetResourceReference(Control.TemplateProperty, ButtonTemplateName);
+                btnCancel.SetResourceReference(Control.TemplateProperty, ButtonTemplateName);
+                btnAbort.SetResourceReference(Control.TemplateProperty, ButtonTemplateName);
+                btnRetry.SetResourceReference(Control.TemplateProperty, ButtonTemplateName);
+                btnIgnore.SetResourceReference(Control.TemplateProperty, ButtonTemplateName);
             }
-                break;
-            case MessageBoxButtonEx.YesNoCancel :
-            {
-                switch (buttonDefault)
-                {
-                    case MessageBoxButtonDefault.Button1 :
-                    case MessageBoxButtonDefault.Yes :
-                        break;
-                    case MessageBoxButtonDefault.MostPositive :
-                        IsDefaultYes = true;
-                        break;
-                    case MessageBoxButtonDefault.Button2 :
-                    case MessageBoxButtonDefault.No :
-                        IsDefaultNo = true;
-                        break;
-                    case MessageBoxButtonDefault.Button3 :
-                    case MessageBoxButtonDefault.Cancel :
-                    case MessageBoxButtonDefault.LeastPositive :
-                        IsDefaultCancel = true;
-                        break;
-                    case MessageBoxButtonDefault.Forms :
-                    default :
-                        IsDefaultYes = true;
-                        break;
-                }
-            }
-                break;
-            case MessageBoxButtonEx.YesNo :
-            {
-                switch (buttonDefault)
-                {
-                    case MessageBoxButtonDefault.Button1 :
-                    case MessageBoxButtonDefault.Yes :
-                    case MessageBoxButtonDefault.MostPositive :
-                        IsDefaultYes = true;
-                        break;
-                    case MessageBoxButtonDefault.Button2 :
-                    case MessageBoxButtonDefault.No :
-                    case MessageBoxButtonDefault.LeastPositive :
-                        IsDefaultNo = true;
-                        break;
-                    case MessageBoxButtonDefault.Forms :
-                    default :
-                        IsDefaultYes = true;
-                        break;
-                }
-            }
-                break;
-            case MessageBoxButtonEx.RetryCancel :
-            {
-                switch (buttonDefault)
-                {
-                    case MessageBoxButtonDefault.Button1 :
-                    case MessageBoxButtonDefault.Retry :
-                    case MessageBoxButtonDefault.MostPositive :
-                        IsDefaultRetry = true;
-                        break;
-                    case MessageBoxButtonDefault.Button2 :
-                    case MessageBoxButtonDefault.Cancel :
-                    case MessageBoxButtonDefault.LeastPositive :
-                        IsDefaultCancel = true;
-                        break;
-                    case MessageBoxButtonDefault.Forms :
-                    case MessageBoxButtonDefault.OK :
-                    case MessageBoxButtonDefault.Yes :
-                    case MessageBoxButtonDefault.No :
-                    case MessageBoxButtonDefault.Abort :
-                    case MessageBoxButtonDefault.Ignore :
-                    case MessageBoxButtonDefault.Button3 :
-                    case MessageBoxButtonDefault.None :
-                    default :
-                        IsDefaultRetry = true;
-                        break;
-                }
-            }
-                break;
-            case MessageBoxButtonEx.AbortRetryIgnore :
-            {
-                switch (buttonDefault)
-                {
-                    case MessageBoxButtonDefault.Button1 :
-                    case MessageBoxButtonDefault.Abort :
-                    case MessageBoxButtonDefault.LeastPositive :
-                        IsDefaultAbort = true;
-                        break;
-                    case MessageBoxButtonDefault.Button2 :
-                    case MessageBoxButtonDefault.Retry :
-                        IsDefaultRetry = true;
-                        break;
-                    case MessageBoxButtonDefault.Button3 :
-                    case MessageBoxButtonDefault.Ignore :
-                    case MessageBoxButtonDefault.MostPositive :
-                        IsDefaultIgnore = true;
-                        break;
-                    case MessageBoxButtonDefault.Forms :
-                    case MessageBoxButtonDefault.OK :
-                    case MessageBoxButtonDefault.Cancel :
-                    case MessageBoxButtonDefault.Yes :
-                    case MessageBoxButtonDefault.No :
-                    default :
-                        IsDefaultAbort = true;
-                        break;
-                }
-            }
-                break;
-            case null :
-                break;
-            default :
-                throw new ArgumentOutOfRangeException();
         }
     }
 
-    private void FindDefaultButton(MessageBoxButtonDefault buttonDefault)
+    void FindDefaultButtonEx(MessageBoxButtonDefault buttonDefault)
     {
         // determine default button
-        IsDefaultOk     = false;
+        IsDefaultOK = false;
         IsDefaultCancel = false;
-        IsDefaultYes    = false;
-        IsDefaultNo     = false;
-        IsDefaultAbort  = false;
-        IsDefaultRetry  = false;
+        IsDefaultYes = false;
+        IsDefaultNo = false;
+        IsDefaultAbort = false;
+        IsDefaultRetry = false;
         IsDefaultIgnore = false;
 
-        if (buttonDefault == MessageBoxButtonDefault.None) return;
-        switch (Buttons)
+        if (buttonDefault != MessageBoxButtonDefault.None)
         {
-            case MessageBoxButton.OK :
-                IsDefaultOk = true;
-                break;
-            case MessageBoxButton.OKCancel :
+            switch (ButtonsEx)
             {
-                switch (buttonDefault)
-                {
-                    case MessageBoxButtonDefault.Button1 :
-                    case MessageBoxButtonDefault.OK :
-                    case MessageBoxButtonDefault.MostPositive :
-                        IsDefaultOk = true;
-                        break;
-                    case MessageBoxButtonDefault.Button2 :
-                    case MessageBoxButtonDefault.Cancel :
-                    case MessageBoxButtonDefault.LeastPositive :
-                        IsDefaultCancel = true;
-                        break;
-                    case MessageBoxButtonDefault.Forms :
-                    default :
-                        IsDefaultOk = true;
-                        break;
-                }
+                case MessageBoxButtonEx.OK:
+                    IsDefaultOK = true;
+                    break;
+                case MessageBoxButtonEx.OKCancel:
+                    {
+                        switch (buttonDefault)
+                        {
+                            case MessageBoxButtonDefault.Button1:
+                            case MessageBoxButtonDefault.OK:
+                            case MessageBoxButtonDefault.MostPositive:
+                                IsDefaultOK = true;
+                                break;
+                            case MessageBoxButtonDefault.Button2:
+                            case MessageBoxButtonDefault.Cancel:
+                            case MessageBoxButtonDefault.LeastPositive:
+                                IsDefaultCancel = true;
+                                break;
+                            case MessageBoxButtonDefault.Forms:
+                            default:
+                                IsDefaultOK = true;
+                                break;
+                        }
+                    }
+                    break;
+                case MessageBoxButtonEx.YesNoCancel:
+                    {
+                        switch (buttonDefault)
+                        {
+                            case MessageBoxButtonDefault.Button1:
+                            case MessageBoxButtonDefault.Yes:
+                                break;
+                            case MessageBoxButtonDefault.MostPositive:
+                                IsDefaultYes = true;
+                                break;
+                            case MessageBoxButtonDefault.Button2:
+                            case MessageBoxButtonDefault.No:
+                                IsDefaultNo = true;
+                                break;
+                            case MessageBoxButtonDefault.Button3:
+                            case MessageBoxButtonDefault.Cancel:
+                            case MessageBoxButtonDefault.LeastPositive:
+                                IsDefaultCancel = true;
+                                break;
+                            case MessageBoxButtonDefault.Forms:
+                            default:
+                                IsDefaultYes = true;
+                                break;
+                        }
+                    }
+                    break;
+                case MessageBoxButtonEx.YesNo:
+                    {
+                        switch (buttonDefault)
+                        {
+                            case MessageBoxButtonDefault.Button1:
+                            case MessageBoxButtonDefault.Yes:
+                            case MessageBoxButtonDefault.MostPositive:
+                                IsDefaultYes = true;
+                                break;
+                            case MessageBoxButtonDefault.Button2:
+                            case MessageBoxButtonDefault.No:
+                            case MessageBoxButtonDefault.LeastPositive:
+                                IsDefaultNo = true;
+                                break;
+                            case MessageBoxButtonDefault.Forms:
+                            default:
+                                IsDefaultYes = true;
+                                break;
+                        }
+                    }
+                    break;
+                case MessageBoxButtonEx.RetryCancel:
+                    {
+                        switch (buttonDefault)
+                        {
+                            case MessageBoxButtonDefault.Button1:
+                            case MessageBoxButtonDefault.Retry:
+                            case MessageBoxButtonDefault.MostPositive:
+                                IsDefaultRetry = true;
+                                break;
+                            case MessageBoxButtonDefault.Button2:
+                            case MessageBoxButtonDefault.Cancel:
+                            case MessageBoxButtonDefault.LeastPositive:
+                                IsDefaultCancel = true;
+                                break;
+                            case MessageBoxButtonDefault.Forms:
+                            default:
+                                IsDefaultRetry = true;
+                                break;
+                        }
+                    }
+                    break;
+                case MessageBoxButtonEx.AbortRetryIgnore:
+                    {
+                        switch (buttonDefault)
+                        {
+                            case MessageBoxButtonDefault.Button1:
+                            case MessageBoxButtonDefault.Abort:
+                            case MessageBoxButtonDefault.LeastPositive:
+                                IsDefaultAbort = true;
+                                break;
+                            case MessageBoxButtonDefault.Button2:
+                            case MessageBoxButtonDefault.Retry:
+                                IsDefaultRetry = true;
+                                break;
+                            case MessageBoxButtonDefault.Button3:
+                            case MessageBoxButtonDefault.Ignore:
+                            case MessageBoxButtonDefault.MostPositive:
+                                IsDefaultIgnore = true;
+                                break;
+                            case MessageBoxButtonDefault.Forms:
+                            default:
+                                IsDefaultAbort = true;
+                                break;
+                        }
+                    }
+                    break;
             }
-                break;
-            case MessageBoxButton.YesNoCancel :
+        }
+    }
+
+    void FindDefaultButton(MessageBoxButtonDefault buttonDefault)
+    {
+        // determine default button
+        IsDefaultOK = false;
+        IsDefaultCancel = false;
+        IsDefaultYes = false;
+        IsDefaultNo = false;
+        IsDefaultAbort = false;
+        IsDefaultRetry = false;
+        IsDefaultIgnore = false;
+
+        if (buttonDefault != MessageBoxButtonDefault.None)
+        {
+            switch (Buttons)
             {
-                switch (buttonDefault)
-                {
-                    case MessageBoxButtonDefault.Button1 :
-                    case MessageBoxButtonDefault.Yes :
-                        break;
-                    case MessageBoxButtonDefault.MostPositive :
-                        IsDefaultYes = true;
-                        break;
-                    case MessageBoxButtonDefault.Button2 :
-                    case MessageBoxButtonDefault.No :
-                        IsDefaultNo = true;
-                        break;
-                    case MessageBoxButtonDefault.Button3 :
-                    case MessageBoxButtonDefault.Cancel :
-                    case MessageBoxButtonDefault.LeastPositive :
-                        IsDefaultCancel = true;
-                        break;
-                    case MessageBoxButtonDefault.Forms :
-                    case MessageBoxButtonDefault.OK :
-                    case MessageBoxButtonDefault.Abort :
-                    case MessageBoxButtonDefault.Retry :
-                    case MessageBoxButtonDefault.Ignore :
-                    default :
-                        IsDefaultYes = true;
-                        break;
-                }
+                case MessageBoxButton.OK:
+                    IsDefaultOK = true;
+                    break;
+                case MessageBoxButton.OKCancel:
+                    {
+                        switch (buttonDefault)
+                        {
+                            case MessageBoxButtonDefault.Button1:
+                            case MessageBoxButtonDefault.OK:
+                            case MessageBoxButtonDefault.MostPositive:
+                                IsDefaultOK = true;
+                                break;
+                            case MessageBoxButtonDefault.Button2:
+                            case MessageBoxButtonDefault.Cancel:
+                            case MessageBoxButtonDefault.LeastPositive:
+                                IsDefaultCancel = true;
+                                break;
+                            case MessageBoxButtonDefault.Forms:
+                            default:
+                                IsDefaultOK = true;
+                                break;
+                        }
+                    }
+                    break;
+                case MessageBoxButton.YesNoCancel:
+                    {
+                        switch (buttonDefault)
+                        {
+                            case MessageBoxButtonDefault.Button1:
+                            case MessageBoxButtonDefault.Yes:
+                                break;
+                            case MessageBoxButtonDefault.MostPositive:
+                                IsDefaultYes = true;
+                                break;
+                            case MessageBoxButtonDefault.Button2:
+                            case MessageBoxButtonDefault.No:
+                                IsDefaultNo = true;
+                                break;
+                            case MessageBoxButtonDefault.Button3:
+                            case MessageBoxButtonDefault.Cancel:
+                            case MessageBoxButtonDefault.LeastPositive:
+                                IsDefaultCancel = true;
+                                break;
+                            case MessageBoxButtonDefault.Forms:
+                            default:
+                                IsDefaultYes = true;
+                                break;
+                        }
+                    }
+                    break;
+                case MessageBoxButton.YesNo:
+                    {
+                        switch (buttonDefault)
+                        {
+                            case MessageBoxButtonDefault.Button1:
+                            case MessageBoxButtonDefault.Yes:
+                            case MessageBoxButtonDefault.MostPositive:
+                                IsDefaultYes = true;
+                                break;
+                            case MessageBoxButtonDefault.Button2:
+                            case MessageBoxButtonDefault.No:
+                            case MessageBoxButtonDefault.LeastPositive:
+                                IsDefaultNo = true;
+                                break;
+                            case MessageBoxButtonDefault.Forms:
+                            default:
+                                IsDefaultYes = true;
+                                break;
+                        }
+                    }
+                    break;
             }
-                break;
-            case MessageBoxButton.YesNo :
-            {
-                switch (buttonDefault)
-                {
-                    case MessageBoxButtonDefault.Button1 :
-                    case MessageBoxButtonDefault.Yes :
-                    case MessageBoxButtonDefault.MostPositive :
-                        IsDefaultYes = true;
-                        break;
-                    case MessageBoxButtonDefault.Button2 :
-                    case MessageBoxButtonDefault.No :
-                    case MessageBoxButtonDefault.LeastPositive :
-                        IsDefaultNo = true;
-                        break;
-                    case MessageBoxButtonDefault.Forms :
-                    case MessageBoxButtonDefault.OK :
-                    case MessageBoxButtonDefault.Cancel :
-                    case MessageBoxButtonDefault.Abort :
-                    case MessageBoxButtonDefault.Retry :
-                    case MessageBoxButtonDefault.Ignore :
-                    case MessageBoxButtonDefault.Button3 :
-                    default :
-                        IsDefaultYes = true;
-                        break;
-                }
-            }
-                break;
-            case null :
-                break;
-            default :
-                throw new ArgumentOutOfRangeException();
         }
     }
 
@@ -711,11 +735,11 @@ public sealed partial class MessageBoxEx
     /// </summary>
     /// <param name="sender"></param>
     /// <param name="e"></param>
-    private void BtnOK_Click(object sender, RoutedEventArgs e)
+    void BtnOK_Click(object sender, RoutedEventArgs e)
     {
-        MessageResult   = MessageBoxResult.OK;
-        MessageResultEx = MessageBoxResultEx.OK;
-        DialogResult    = true;
+        this.MessageResult = MessageBoxResult.OK;
+        this.MessageResultEx = MessageBoxResultEx.OK;
+        this.DialogResult = true;
     }
 
     /// <summary>
@@ -723,11 +747,11 @@ public sealed partial class MessageBoxEx
     /// </summary>
     /// <param name="sender"></param>
     /// <param name="e"></param>
-    private void BtnYes_Click(object sender, RoutedEventArgs e)
+    void BtnYes_Click(object sender, RoutedEventArgs e)
     {
-        MessageResult   = MessageBoxResult.Yes;
-        MessageResultEx = MessageBoxResultEx.Yes;
-        DialogResult    = true;
+        this.MessageResult = MessageBoxResult.Yes;
+        this.MessageResultEx = MessageBoxResultEx.Yes;
+        this.DialogResult = true;
     }
 
     /// <summary>
@@ -735,32 +759,32 @@ public sealed partial class MessageBoxEx
     /// </summary>
     /// <param name="sender"></param>
     /// <param name="e"></param>
-    private void BtnNo_Click(object sender, RoutedEventArgs e)
+    void BtnNo_Click(object sender, RoutedEventArgs e)
     {
-        MessageResult   = MessageBoxResult.No;
-        MessageResultEx = MessageBoxResultEx.No;
-        DialogResult    = true;
+        this.MessageResult = MessageBoxResult.No;
+        this.MessageResultEx = MessageBoxResultEx.No;
+        this.DialogResult = true;
     }
 
-    private void BtnAbort_Click(object sender, RoutedEventArgs e)
+    void BtnAbort_Click(object sender, RoutedEventArgs e)
     {
-        MessageResult   = MessageBoxResult.None;
-        MessageResultEx = MessageBoxResultEx.Abort;
-        DialogResult    = true;
+        this.MessageResult = MessageBoxResult.None;
+        this.MessageResultEx = MessageBoxResultEx.Abort;
+        this.DialogResult = true;
     }
 
-    private void BtnRetry_Click(object sender, RoutedEventArgs e)
+    void BtnRetry_Click(object sender, RoutedEventArgs e)
     {
-        MessageResult   = MessageBoxResult.None;
-        MessageResultEx = MessageBoxResultEx.Retry;
-        DialogResult    = true;
+        this.MessageResult = MessageBoxResult.None;
+        this.MessageResultEx = MessageBoxResultEx.Retry;
+        this.DialogResult = true;
     }
 
-    private void BtnIgnore_Click(object sender, RoutedEventArgs e)
+    void BtnIgnore_Click(object sender, RoutedEventArgs e)
     {
-        MessageResult   = MessageBoxResult.None;
-        MessageResultEx = MessageBoxResultEx.Ignore;
-        DialogResult    = true;
+        this.MessageResult = MessageBoxResult.None;
+        this.MessageResultEx = MessageBoxResultEx.Ignore;
+        this.DialogResult = true;
     }
 
     /// <summary>
@@ -768,102 +792,101 @@ public sealed partial class MessageBoxEx
     /// </summary>
     /// <param name="sender"></param>
     /// <param name="e"></param>
-    private void BtnCancel_Click(object sender, RoutedEventArgs e)
+    void BtnCancel_Click(object sender, RoutedEventArgs e)
     {
-        MessageResult   = MessageBoxResult.Cancel;
-        MessageResultEx = MessageBoxResultEx.Cancel;
-        DialogResult    = true;
+        this.MessageResult = MessageBoxResult.Cancel;
+        this.MessageResultEx = MessageBoxResultEx.Cancel;
+        this.DialogResult = true;
     }
 
     #endregion buttons
 
-    private void NotifiableWindow_SizeChanged(object sender, SizeChangedEventArgs e) => CenterInScreen();
+    void NotifiableWindow_SizeChanged(object sender, SizeChangedEventArgs e) => CenterInScreen();
 
-    private void Window_Loaded(object sender, RoutedEventArgs e)
+    void Window_Loaded(object sender, RoutedEventArgs e)
     {
-        imgMsgBoxIcon.ToolTip = (_msgBoxImage == MessageBoxImage.Error) ? MsgBoxIconToolTip : null;
+        imgMsgBoxIcon.ToolTip = (msgBoxImage == MessageBoxImage.Error) ? MsgBoxIconToolTip : null;
     }
 
-    private void Window_Closing(object sender, CancelEventArgs e)
+    void Window_Closing(object sender, CancelEventArgs e)
     {
-        DetailsText         = null;
-        CheckBoxData        = null;
+        DetailsText = null;
+        CheckBoxData = null;
         staticButtonDefault = MessageBoxButtonDefault.Forms;
 
-        if (MessageResult != MessageBoxResult.None) return;
-        if (_usingExButtons)
+        if (MessageResult == MessageBoxResult.None)
         {
-            switch (ButtonsEx)
+            if (usingExButtons)
             {
-                case MessageBoxButtonEx.OK :
-                    MessageResultEx = MessageBoxResultEx.OK;
-                    break;
-                case MessageBoxButtonEx.YesNoCancel :
-                case MessageBoxButtonEx.OKCancel :
-                case MessageBoxButtonEx.RetryCancel :
-                case MessageBoxButtonEx.AbortRetryIgnore :
-                    MessageResultEx = MessageBoxResultEx.Cancel;
-                    break;
-                case MessageBoxButtonEx.YesNo :
-                    MessageResultEx = MessageBoxResultEx.No;
-                    break;
-                case null :
-                    break;
-                default :
-                    throw new ArgumentOutOfRangeException();
+                switch (ButtonsEx)
+                {
+                    case MessageBoxButtonEx.OK:
+                        MessageResultEx = MessageBoxResultEx.OK;
+                        break;
+                    case MessageBoxButtonEx.YesNoCancel:
+                    case MessageBoxButtonEx.OKCancel:
+                    case MessageBoxButtonEx.RetryCancel:
+                    case MessageBoxButtonEx.AbortRetryIgnore:
+                        MessageResultEx = MessageBoxResultEx.Cancel;
+                        break;
+                    case MessageBoxButtonEx.YesNo:
+                        MessageResultEx = MessageBoxResultEx.No;
+                        break;
+                }
             }
-        }
-        else
-        {
-            switch (Buttons)
+            else
             {
-                case MessageBoxButton.OK :
-                    MessageResult = MessageBoxResult.OK;
-                    break;
-                case MessageBoxButton.YesNoCancel :
-                case MessageBoxButton.OKCancel :
-                    MessageResult = MessageBoxResult.Cancel;
-                    break;
-                case MessageBoxButton.YesNo :
-                    MessageResult = MessageBoxResult.No;
-                    break;
-                case null :
-                    break;
-                default :
-                    throw new ArgumentOutOfRangeException();
+                switch (Buttons)
+                {
+                    case MessageBoxButton.OK:
+                        MessageResult = MessageBoxResult.OK;
+                        break;
+                    case MessageBoxButton.YesNoCancel:
+                    case MessageBoxButton.OKCancel:
+                        MessageResult = MessageBoxResult.Cancel;
+                        break;
+                    case MessageBoxButton.YesNo:
+                        MessageResult = MessageBoxResult.No;
+                        break;
+                }
             }
         }
     }
 
-    private void ImgMsgBoxIcon_MouseLeftButtonUp(object sender, MouseButtonEventArgs e)
+    void ImgMsgBoxIcon_MouseLeftButtonUp(object sender, MouseButtonEventArgs e)
     {
-        if (DelegateObj == null || _msgBoxImage != MessageBoxImage.Error || Buttons != MessageBoxButton.OK) return;
-        DelegateObj.PerformAction(Message);
+        if (DelegateObj != null && msgBoxImage == MessageBoxImage.Error && Buttons == MessageBoxButton.OK)
+        {
+            DelegateObj.PerformAction(Message);
 
-        if (!ExitAfterErrorAction) return;
-        MessageResult = MessageBoxResult.None;
-        DialogResult  = true;
+            if (ExitAfterErrorAction)
+            {
+                MessageResult = MessageBoxResult.None;
+                DialogResult = true;
+            }
+        }
     }
 
-    private void TbUrl_MouseLeftButtonUp(object sender, MouseButtonEventArgs e) =>
-        ProcessHelp.ShellExecute(Url?.ToString());
+    void TbUrl_MouseLeftButtonUp(object sender, MouseButtonEventArgs e) => ProcessHelp.ShellExecute(Url?.ToString());
 
     [DllImport("user32.dll")]
     private static extern IntPtr GetSystemMenu(IntPtr hWnd, bool bRevert);
 
     [DllImport("user32.dll")]
-    private static extern bool EnableMenuItem(IntPtr hMenu, uint uIdEnableItem, uint uEnable);
+    private static extern bool EnableMenuItem(IntPtr hMenu, uint uIDEnableItem, uint uEnable);
 
-    private const uint MfByCommand = 0x00000000;
-    private const uint MfGrayed    = 0x00000001;
-    private const uint ScClose     = 0xF060;
+    private const uint MF_BYCOMMAND = 0x00000000;
+    private const uint MF_GRAYED = 0x00000001;
+    private const uint SC_CLOSE = 0xF060;
 
-    private void Window_SourceInitialized(object sender, EventArgs e)
+    void Window_SourceInitialized(object sender, EventArgs e)
     {
-        if (enableCloseButton) return;
-        var hWnd    = new WindowInteropHelper(this);
-        var sysMenu = GetSystemMenu(hWnd.Handle, false);
-        EnableMenuItem(sysMenu, ScClose, MfByCommand | MfGrayed);
+        if (!enableCloseButton)
+        {
+            var hWnd = new WindowInteropHelper(this);
+            var sysMenu = GetSystemMenu(hWnd.Handle, false);
+            EnableMenuItem(sysMenu, SC_CLOSE, MF_BYCOMMAND | MF_GRAYED);
+        }
     }
 
     #endregion event handlers

@@ -1,3 +1,4 @@
+﻿
 using System.Security.Cryptography;
 using System.Text;
 
@@ -5,11 +6,11 @@ namespace MpvNet.Help;
 
 public static class StringHelp
 {
-    public static string GetMd5Hash(string txt)
+    public static string GetMD5Hash(string txt)
     {
-        using var md5         = MD5.Create();
-        var       inputBuffer = Encoding.UTF8.GetBytes(txt);
-        md5.ComputeHash(inputBuffer);
+        using MD5 md5 = MD5.Create();
+        byte[] inputBuffer = Encoding.UTF8.GetBytes(txt);
+        byte[] hashBuffer = md5.ComputeHash(inputBuffer);
         return BitConverter.ToString(md5.ComputeHash(inputBuffer)).Replace("-", "");
     }
 }

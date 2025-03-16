@@ -1,4 +1,4 @@
-namespace NGettext.Wpf
+﻿namespace NGettext.Wpf
 {
     public interface IWeakCultureObserver
     {

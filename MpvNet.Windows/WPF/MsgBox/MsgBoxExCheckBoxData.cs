@@ -1,3 +1,4 @@
+﻿
 using System.ComponentModel;
 using System.Runtime.CompilerServices;
 
@@ -5,16 +6,16 @@ namespace MpvNet.Windows.WPF.MsgBox;
 
 public class MsgBoxExCheckBoxData : INotifyPropertyChanged
 {
-    private bool _isModified;
+    private bool isModified = false;
 
-    public bool IsModified
-    {
-        get => _isModified;
-        set
-        {
-            if (value == _isModified) return;
-            _isModified = true;
-            NotifyPropertyChanged();
+    public bool IsModified {
+        get => isModified;
+        set {
+            if (value != isModified)
+            {
+                isModified = true;
+                NotifyPropertyChanged();
+            }
         }
     }
 
@@ -22,10 +23,34 @@ public class MsgBoxExCheckBoxData : INotifyPropertyChanged
 
     protected void NotifyPropertyChanged([CallerMemberName] string propertyName = "")
     {
-        if (PropertyChanged == null) return;
-        PropertyChanged(this, new PropertyChangedEventArgs(propertyName));
+        if (PropertyChanged != null)
+        {
+            PropertyChanged(this, new PropertyChangedEventArgs(propertyName));
 
-        if (propertyName != "IsModified")
-            IsModified = true;
+            if (propertyName != "IsModified")
+                IsModified = true;
+        }
+    }
+
+    private string? checkBoxText;
+    private bool checkBoxIsChecked;
+
+    public string? CheckBoxText {
+        get => checkBoxText;
+        set {
+            if (value != checkBoxText)
+                checkBoxText = value; NotifyPropertyChanged();
+        }
+    }
+
+    public bool CheckBoxIsChecked {
+        get => checkBoxIsChecked;
+        set {
+            if (value != checkBoxIsChecked)
+            {
+                checkBoxIsChecked = value;
+                NotifyPropertyChanged();
+            }
+        }
     }
 }

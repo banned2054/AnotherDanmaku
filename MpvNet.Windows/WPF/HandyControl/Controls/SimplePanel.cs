@@ -1,7 +1,9 @@
+﻿
+
 using System.Windows;
 using System.Windows.Controls;
 
-namespace MpvNet.Windows.WPF.HandyControl.Controls
+namespace HandyControl.Controls
 {
     public class SimplePanel : Panel
     {
@@ -11,10 +13,12 @@ namespace MpvNet.Windows.WPF.HandyControl.Controls
 
             foreach (UIElement child in InternalChildren)
             {
-                if (child == null) continue;
-                child.Measure(constraint);
-                maxSize.Width  = Math.Max(maxSize.Width, child.DesiredSize.Width);
-                maxSize.Height = Math.Max(maxSize.Height, child.DesiredSize.Height);
+                if (child != null)
+                {
+                    child.Measure(constraint);
+                    maxSize.Width = Math.Max(maxSize.Width, child.DesiredSize.Width);
+                    maxSize.Height = Math.Max(maxSize.Height, child.DesiredSize.Height);
+                }
             }
 
             return maxSize;

@@ -1,33 +1,35 @@
-using MpvNet.Help;
-using MpvNet.Windows.Help;
-using MpvNet.Windows.Native;
-using MpvNet.Windows.UI;
-using MpvNet.Windows.WPF;
-using System.Threading;
+﻿
 using System.Windows.Forms;
+using System.Threading;
+
+using MpvNet.Windows.Native;
+using MpvNet.Help;
+using MpvNet.Windows.UI;
+using MpvNet.Windows.Help;
+using MpvNet.Windows.WPF;
 
 namespace MpvNet.Windows;
 
-internal static class Program
+static class Program
 {
     [STAThread]
-    private static void Main()
+    static void Main()
     {
         try
         {
             RegistryHelp.ProductName = AppInfo.Product;
-            Translator.Current       = new WpfTranslator();
+            Translator.Current = new WpfTranslator();
 
             Application.EnableVisualStyles();
             Application.SetCompatibleTextRenderingDefault(false);
 
-            AppDomain.CurrentDomain.UnhandledException += (_, e) => Terminal.WriteError(e.ExceptionObject);
-            Application.ThreadException                += (_, e) => Terminal.WriteError(e.Exception);
+            AppDomain.CurrentDomain.UnhandledException += (sender, e) => Terminal.WriteError(e.ExceptionObject);
+            Application.ThreadException += (sender, e) => Terminal.WriteError(e.Exception);
 
             if (App.IsTerminalAttached)
                 WinApi.AttachConsole(-1 /*ATTACH_PARENT_PROCESS*/);
 
-            var args = Environment.GetCommandLineArgs().Skip(1).ToArray();
+            string[] args = Environment.GetCommandLineArgs().Skip(1).ToArray();
 
             if (args.Length > 0 && args[0] == "--register-file-associations")
             {
@@ -37,23 +39,23 @@ internal static class Program
 
             App.Init();
             Theme.Init();
-            var mutex = new Mutex(true, StringHelp.GetMd5Hash(App.ConfPath), out var isFirst);
+            Mutex mutex = new Mutex(true, StringHelp.GetMD5Hash(App.ConfPath), out bool isFirst);
 
-            if (Control.ModifierKeys == Keys.Shift                   ||
+            if (Control.ModifierKeys == Keys.Shift ||
                 App.CommandLine.Contains("--process-instance=multi") ||
                 App.CommandLine.Contains("--o="))
             {
                 App.ProcessInstance = "multi";
             }
 
-            if (App.ProcessInstance is "single" or "queue" && !isFirst)
+            if ((App.ProcessInstance == "single" || App.ProcessInstance == "queue") && !isFirst)
             {
-                var args2 = new List<string> { App.ProcessInstance };
+                List<string> args2 = new List<string> { App.ProcessInstance };
 
-                foreach (var arg in args)
+                foreach (string arg in args)
                 {
-                    if (!arg.StartsWith("--") && (arg == "-"          || arg.Contains("://") ||
-                                                  arg.Contains(":\\") || arg.StartsWith("\\\\")))
+                    if (!arg.StartsWith("--") && (arg == "-" || arg.Contains("://") ||
+                        arg.Contains(":\\") || arg.StartsWith("\\\\")))
 
                         args2.Add(arg);
                     else if (arg == "--queue")
@@ -65,26 +67,26 @@ internal static class Program
                     }
                 }
 
-                var processList = Process.GetProcessesByName("mpvnet");
+                Process[] procs = Process.GetProcessesByName("mpvnet");
 
-                for (var i = 0; i < 20; i++)
+                for (int i = 0; i < 20; i++)
                 {
-                    foreach (var proc in processList)
+                    foreach (Process proc in procs)
                     {
-                        if (proc.MainWindowHandle == IntPtr.Zero) continue;
-                        WinApi.AllowSetForegroundWindow(proc.Id);
-                        var data = new WinApi.CopyDataStruct
+                        if (proc.MainWindowHandle != IntPtr.Zero)
                         {
-                            lpData = string.Join("\n", args2.ToArray())
-                        };
-                        data.cbData = data.lpData.Length * 2 + 1;
-                        WinApi.SendMessage(proc.MainWindowHandle, 0x004A /*WM_COPYDATA*/, IntPtr.Zero, ref data);
-                        mutex.Dispose();
+                            WinApi.AllowSetForegroundWindow(proc.Id);
+                            var data = new WinApi.CopyDataStruct();
+                            data.lpData = string.Join("\n", args2.ToArray());
+                            data.cbData = data.lpData.Length * 2 + 1;
+                            WinApi.SendMessage(proc.MainWindowHandle, 0x004A /*WM_COPYDATA*/, IntPtr.Zero, ref data);
+                            mutex.Dispose();
 
-                        if (App.IsTerminalAttached)
-                            WinApi.FreeConsole();
+                            if (App.IsTerminalAttached)
+                                WinApi.FreeConsole();
 
-                        return;
+                            return;
+                        }
                     }
 
                     Thread.Sleep(50);
@@ -120,38 +122,44 @@ internal static class Program
         }
     }
 
-    private static bool ProcessCommandLineArguments()
+    static bool ProcessCommandLineArguments()
     {
-        foreach (var arg in Environment.GetCommandLineArgs().Skip(1))
+        foreach (string arg in Environment.GetCommandLineArgs().Skip(1))
         {
-            switch (arg)
+            if (arg == "--profile=help")
             {
-                case "--profile=help" :
-                    Player.Init(IntPtr.Zero, false);
-                    Console.WriteLine(Player.GetProfiles());
-                    Player.Destroy();
-                    return true;
-                case "--vd=help" :
-                case "--ad=help" :
-                    Player.Init(IntPtr.Zero, false);
-                    Console.WriteLine(Player.GetDecoders());
-                    Player.Destroy();
-                    return true;
-                case "--audio-device=help" :
-                    Player.Init(IntPtr.Zero, false);
-                    Console.WriteLine(Player.GetPropertyOsdString("audio-device-list"));
-                    Player.Destroy();
-                    return true;
-                case "--input-keylist" :
-                    Player.Init(IntPtr.Zero, false);
-                    Console.WriteLine(Player.GetPropertyString("input-key-list").Replace(",", Br));
-                    Player.Destroy();
-                    return true;
-                case "--version" :
-                    Player.Init(IntPtr.Zero, false);
-                    Console.WriteLine(AppClass.About);
-                    Player.Destroy();
-                    return true;
+                Player.Init(IntPtr.Zero, false);
+                Console.WriteLine(Player.GetProfiles());
+                Player.Destroy();
+                return true;
+            }
+            else if (arg == "--vd=help" || arg == "--ad=help")
+            {
+                Player.Init(IntPtr.Zero, false);
+                Console.WriteLine(Player.GetDecoders());
+                Player.Destroy();
+                return true;
+            }
+            else if (arg == "--audio-device=help")
+            {
+                Player.Init(IntPtr.Zero, false);
+                Console.WriteLine(Player.GetPropertyOsdString("audio-device-list"));
+                Player.Destroy();
+                return true;
+            }
+            else if (arg == "--input-keylist")
+            {
+                Player.Init(IntPtr.Zero, false);
+                Console.WriteLine(Player.GetPropertyString("input-key-list").Replace(",", BR));
+                Player.Destroy();
+                return true;
+            }
+            else if (arg == "--version")
+            {
+                Player.Init(IntPtr.Zero, false);
+                Console.WriteLine(AppClass.About);
+                Player.Destroy();
+                return true;
             }
         }
 

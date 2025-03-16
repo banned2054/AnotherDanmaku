@@ -1,24 +1,41 @@
-using HandyControl.Tools.Interop;
+﻿
+using System.Runtime.ConstrainedExecution;
+using System.Runtime.InteropServices;
 using System.Security;
 
-namespace MpvNet.Windows.WPF.HandyControl.Tools.Interop.Handle
+namespace HandyControl.Tools.Interop
 {
     internal sealed class BitmapHandle : WpfSafeHandle
     {
         [SecurityCritical]
-        private BitmapHandle(bool ownsHandle) : base(ownsHandle, CommonHandles.GDI)
+        private BitmapHandle() : this(true)
         {
         }
 
-        public static BitmapHandle CreateInstance(bool ownsHandle)
+        [SecurityCritical]
+        private BitmapHandle(bool ownsHandle) : base(ownsHandle, CommonHandles.GDI)
         {
-            return new BitmapHandle(ownsHandle);
         }
 
         [SecurityCritical]
         protected override bool ReleaseHandle()
         {
             return InteropMethods.DeleteObject(handle);
+        }
+
+        [SecurityCritical]
+        internal HandleRef MakeHandleRef(object obj)
+        {
+            return new HandleRef(obj, handle);
+        }
+
+        [SecurityCritical]
+        internal static BitmapHandle CreateFromHandle(IntPtr hbitmap, bool ownsHandle = true)
+        {
+            return new BitmapHandle(ownsHandle)
+            {
+                handle = hbitmap,
+            };
         }
     }
 }

@@ -1,8 +1,9 @@
+﻿
 namespace MpvNet.Windows.UI;
 
 public class TreeNode
 {
-    private readonly List<TreeNode> _children = new();
+    readonly List<TreeNode> _children = new List<TreeNode>();
 
     public IList<TreeNode> Children => _children;
 

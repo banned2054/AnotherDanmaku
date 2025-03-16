@@ -1,32 +1,34 @@
-using Microsoft.Win32;
+﻿
 using System.Windows;
 using System.Windows.Media;
+
+using Microsoft.Win32;
 
 namespace MpvNet.Windows.UI;
 
 public class Theme
 {
     public string? Name { get; set; }
-
-    public Dictionary<string, string> Dictionary { get; } = new();
+    public Dictionary<string, string> Dictionary { get; } = new Dictionary<string, string>();
 
     public static List<Theme>? DefaultThemes { get; set; }
-    public static List<Theme>? CustomThemes  { get; set; }
+    public static List<Theme>? CustomThemes { get; set; }
 
-    public static Theme? Current        { get; set; }
-    public        Brush? Background     { get; set; }
-    public        Brush? Foreground     { get; set; }
-    public        Brush? Foreground2    { get; set; }
-    public        Brush? Heading        { get; set; }
-    public        Brush? MenuBackground { get; set; }
-    public        Brush? MenuHighlight  { get; set; }
+    public static Theme? Current { get; set; }
 
-    public Color BackgroundColor     { get; set; }
-    public Color ForegroundColor     { get; set; }
-    public Color Foreground2Color    { get; set; }
-    public Color HeadingColor        { get; set; }
+    public Brush? Background { get; set; }
+    public Brush? Foreground { get; set; }
+    public Brush? Foreground2 { get; set; }
+    public Brush? Heading { get; set; }
+    public Brush? MenuBackground { get; set; }
+    public Brush? MenuHighlight { get; set; }
+
+    public Color BackgroundColor { get; set; }
+    public Color ForegroundColor { get; set; }
+    public Color Foreground2Color { get; set; }
+    public Color HeadingColor { get; set; }
     public Color MenuBackgroundColor { get; set; }
-    public Color MenuHighlightColor  { get; set; }
+    public Color MenuHighlightColor { get; set; }
 
     public Brush GetBrush(string key)
     {
@@ -50,62 +52,71 @@ public class Theme
         Current = null;
 
         DefaultThemes = Load(defaultContent);
-        CustomThemes  = Load(customContent);
+        CustomThemes = Load(customContent);
 
-        foreach (var theme in CustomThemes)
+        foreach (Theme theme in CustomThemes)
         {
-            if (theme.Name != activeTheme) continue;
-            var isKeyMissing = false;
-
-            foreach (var key in DefaultThemes[0].Dictionary.Keys.Where(key => !theme.Dictionary.ContainsKey(key)))
+            if (theme.Name == activeTheme)
             {
-                isKeyMissing = true;
-                Terminal.WriteError($"Theme '{activeTheme}' misses '{key}'");
+                bool isKeyMissing = false;
+
+                foreach (string key in DefaultThemes[0].Dictionary.Keys)
+                {
+                    if (!theme.Dictionary.ContainsKey(key))
+                    {
+                        isKeyMissing = true;
+                        Terminal.WriteError($"Theme '{activeTheme}' misses '{key}'");
+                        break;
+                    }
+                }
+
+                if (!isKeyMissing)
+                    Current = theme;
+
                 break;
             }
-
-            if (!isKeyMissing)
-                Current = theme;
-
-            break;
         }
 
         if (Current == null)
-            foreach (var theme in DefaultThemes.Where(theme => theme.Name == activeTheme))
-                Current = theme;
+            foreach (Theme theme in DefaultThemes)
+                if (theme.Name == activeTheme)
+                    Current = theme;
 
-        Current ??= DefaultThemes[0];
+        if (Current == null)
+            Current = DefaultThemes[0];
 
-        Current.Background     = Current.GetBrush("background");
-        Current.Foreground     = Current.GetBrush("foreground");
-        Current.Foreground2    = Current.GetBrush("foreground2");
-        Current.Heading        = Current.GetBrush("heading");
+        Current.Background = Current.GetBrush("background");
+        Current.Foreground = Current.GetBrush("foreground");
+        Current.Foreground2 = Current.GetBrush("foreground2");
+        Current.Heading = Current.GetBrush("heading");
         Current.MenuBackground = Current.GetBrush("menu-background");
-        Current.MenuHighlight  = Current.GetBrush("menu-highlight");
+        Current.MenuHighlight = Current.GetBrush("menu-highlight");
 
-        Current.BackgroundColor     = Current.GetColor("background");
-        Current.ForegroundColor     = Current.GetColor("foreground");
-        Current.Foreground2Color    = Current.GetColor("foreground2");
-        Current.HeadingColor        = Current.GetColor("heading");
+        Current.BackgroundColor = Current.GetColor("background");
+        Current.ForegroundColor = Current.GetColor("foreground");
+        Current.Foreground2Color = Current.GetColor("foreground2");
+        Current.HeadingColor = Current.GetColor("heading");
         Current.MenuBackgroundColor = Current.GetColor("menu-background");
-        Current.MenuHighlightColor  = Current.GetColor("menu-highlight");
+        Current.MenuHighlightColor = Current.GetColor("menu-highlight");
     }
 
-    private static List<Theme> Load(string? content)
+    static List<Theme> Load(string? content)
     {
-        var    list  = new List<Theme>();
+        List<Theme> list = new List<Theme>();
         Theme? theme = null;
 
-        foreach (var currentLine in (content ?? "").Split('\r', '\n'))
+        foreach (string currentLine in (content ?? "").Split('\r', '\n'))
         {
-            var line = currentLine.Trim();
+            string line = currentLine.Trim();
 
             if (line.StartsWith("[") && line.EndsWith("]"))
                 list.Add(theme = new Theme() { Name = line[1..^1].Trim() });
 
-            if (!line.Contains('=') || theme == null) continue;
-            var left = line[..line.IndexOf("=", StringComparison.Ordinal)].Trim();
-            theme.Dictionary[left] = line[(line.IndexOf("=", StringComparison.Ordinal) + 1)..].Trim();
+            if (line.Contains('=') && theme != null)
+            {
+                string left = line[..line.IndexOf("=")].Trim();
+                theme.Dictionary[left] = line[(line.IndexOf("=") + 1)..].Trim();
+            }
         }
 
         return list;
@@ -131,11 +142,11 @@ public class Theme
         dic.Add("HighlightColor", Current.GetColor("highlight"));
     }
 
-    private static bool DarkModeSystem
+    static bool DarkModeSystem
     {
         get
         {
-            const string key = @"HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\Themes\Personalize";
+            string key = @"HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\Themes\Personalize";
             return (int)(Registry.GetValue(key, "AppsUseLightTheme", 1) ?? 1) == 0;
         }
     }

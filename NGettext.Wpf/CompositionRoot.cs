@@ -1,6 +1,8 @@
+﻿
+using System.Globalization;
+
 using NGettext.Wpf.Common;
 using NGettext.Wpf.EnumTranslation;
-using System.Globalization;
 
 namespace NGettext.Wpf
 {
@@ -8,23 +10,20 @@ namespace NGettext.Wpf
     {
         public static void Compose(string domainName, CultureInfo cultureInfo, string localeFolder)
         {
-            var cultureTracker = new CultureTracker
-            {
-                CurrentCulture = cultureInfo
-            };
+            var cultureTracker = new CultureTracker();
+            cultureTracker.CurrentCulture = cultureInfo;
             var localizer = new Localizer(cultureTracker, domainName, localeFolder);
-            ChangeCultureCommand.CultureTracker        = cultureTracker;
-            GettextExtension.Localizer                 = localizer;
+            ChangeCultureCommand.CultureTracker = cultureTracker;
+            GettextExtension.Localizer = localizer;
             TrackCurrentCultureBehavior.CultureTracker = cultureTracker;
-            LocalizeEnumConverter.EnumLocalizer        = new EnumLocalizer(localizer);
-            Translation.Localizer                      = localizer;
-            GettextStringFormatConverter.Localizer     = localizer;
+            LocalizeEnumConverter.EnumLocalizer = new EnumLocalizer(localizer);
+            Translation.Localizer = localizer;
+            GettextStringFormatConverter.Localizer = localizer;
         }
 
         internal static void WriteMissingInitializationErrorMessage()
         {
-            Console.Error
-                   .WriteLine("NGettext.Wpf: NGettext.Wpf.CompositionRoot.Compose() must be called at the entry point of the application for localization to work");
+            Console.Error.WriteLine("NGettext.Wpf: NGettext.Wpf.CompositionRoot.Compose() must be called at the entry point of the application for localization to work");
         }
     }
 }

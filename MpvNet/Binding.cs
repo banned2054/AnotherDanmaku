@@ -1,3 +1,4 @@
+﻿
 using CommunityToolkit.Mvvm.ComponentModel;
 
 namespace MpvNet;
@@ -7,38 +8,38 @@ public class Binding : ObservableObject
     public string Command { get; set; }
     public string Comment { get; set; }
 
-    public bool IsCustomMenu      { get; set; }
-    public bool IsMenu            { get; set; }
+    public bool IsCustomMenu { get; set; }
+    public bool IsMenu { get; set; }
     public bool IsShortMenuSyntax { get; set; }
 
-    private string _input = string.Empty;
+    string _input = "";
 
     public Binding()
     {
         Command = Comment = Input = "";
     }
 
-    public Binding(string folder  = "",
-                   string name    = "",
+    public Binding(string folder = "",
+                   string name = "",
                    string command = "",
-                   string input   = "",
+                   string input = "",
                    string comment = "")
     {
         if (folder != "" && name != "")
         {
             Comment = folder + " > " + name;
-            IsMenu  = true;
+            IsMenu = true;
         }
         else if (name != "")
         {
             Comment = name;
-            IsMenu  = true;
+            IsMenu = true;
         }
         else
             Comment = comment;
 
         Command = command;
-        Input   = input;
+        Input = input;
     }
 
     public string Input

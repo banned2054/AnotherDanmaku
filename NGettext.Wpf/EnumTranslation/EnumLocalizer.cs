@@ -1,3 +1,4 @@
+﻿
 using System.Reflection;
 
 namespace NGettext.Wpf.EnumTranslation
@@ -7,18 +8,28 @@ namespace NGettext.Wpf.EnumTranslation
         string LocalizeEnum(Enum value);
     }
 
-    public class EnumLocalizer(ILocalizer localizer) : IEnumLocalizer
+    public class EnumLocalizer : IEnumLocalizer
     {
-        private readonly ILocalizer _localizer = localizer ?? throw new ArgumentNullException(nameof(localizer));
+        private readonly ILocalizer _localizer;
+
+        public EnumLocalizer(ILocalizer localizer)
+        {
+            _localizer = localizer ?? throw new ArgumentNullException(nameof(localizer));
+        }
 
         public string LocalizeEnum(Enum value)
         {
-            var type           = value.GetType();
+            var type = value.GetType();
             var enumMemberName = value.ToString();
-            var msgIdAttribute = (EnumMsgIdAttribute)type.GetMember(enumMemberName).SingleOrDefault()
-                                                        ?.GetCustomAttribute(typeof(EnumMsgIdAttribute), true)!;
+            var msgIdAttribute = (EnumMsgIdAttribute)type.GetMember(enumMemberName).SingleOrDefault()?.GetCustomAttribute(typeof(EnumMsgIdAttribute), true);
 
-            return _localizer.Gettext(msgIdAttribute.MsgId)!;
+            if (msgIdAttribute is null)
+            {
+                Console.Error.WriteLine($"{type}.{enumMemberName} lacks the [MsgId(\"...\")] attribute.");
+                return enumMemberName;
+            }
+
+            return _localizer.Gettext(msgIdAttribute.MsgId);
         }
     }
 }

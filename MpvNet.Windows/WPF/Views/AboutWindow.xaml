@@ -5,7 +5,7 @@
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     mc:Ignorable="d"
-
+    
     Title="About mpv.net"
     FontSize="16"
     ShowInTaskbar="False"
@@ -13,12 +13,13 @@
     ResizeMode="NoResize"
     SizeToContent="WidthAndHeight"
     Foreground="{Binding Theme.Foreground}"
-    Background="{Binding Theme.Background}">
+    Background="{Binding Theme.Background}"
+    >
 
     <Window.InputBindings>
-        <KeyBinding Key="Esc" Command="{Binding CloseCommand}" />
+        <KeyBinding Key="Esc" Command="{Binding CloseCommand}"/>
     </Window.InputBindings>
-
+    
     <Grid>
         <StackPanel HorizontalAlignment="Center">
             <TextBox
@@ -28,8 +29,8 @@
                 Margin="10,10,10,0"
                 BorderThickness="0"
                 Foreground="{Binding Theme.Foreground}"
-                Background="{Binding Theme.Background}">
-                mpv.net
+                Background="{Binding Theme.Background}"
+                >mpv.net
             </TextBox>
             <TextBox
                 IsReadOnly="True"

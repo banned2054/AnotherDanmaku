@@ -1,23 +1,20 @@
+﻿
 using NGettext.Wpf;
+
 using System.Globalization;
+using System.Windows.Interop;
 
 namespace MpvNet.Windows.WPF;
 
 public class WpfTranslator : ITranslator
 {
-    private string _localizerLangauge = string.Empty;
+    string _localizerLangauge = "";
 
-    private static IEnumerable<Language> Languages { get; } = new Language[]
-    {
+    static Language[] Languages { get; } = new Language[] {
         new("english", "en", "en"),
-        new("chinese-china", "zh-CN", "zh"), // Chinese (Simplified)
-        new("french", "fr", "fr"),
+        new("chinese-china", "zh-CN", "zh"),  // Chinese (Simplified)
         new("german", "de", "de"),
         new("japanese", "ja", "ja"),
-        new("korean", "ko", "ko"),
-        new("polish", "pl", "pl"),
-        new("russian", "ru", "ru"),
-        new("turkish", "tr", "tr"),
     };
 
     public string Gettext(string msgId)
@@ -41,31 +38,39 @@ public class WpfTranslator : ITranslator
         }
     }
 
-    private static string GetSystemLanguage()
+    string GetSystemLanguage()
     {
-        var twoLetterName = CultureInfo.CurrentUICulture.TwoLetterISOLanguageName;
+        string twoLetterName = CultureInfo.CurrentUICulture.TwoLetterISOLanguageName;
 
-        return twoLetterName == "zh"
-            ? "chinese-china"
-            : // Chinese (Simplified)
-            new CultureInfo(twoLetterName).EnglishName.ToLowerInvariant();
+        if (twoLetterName == "zh")
+            return "chinese-china";  // Chinese (Simplified)
+
+        return new CultureInfo(twoLetterName).EnglishName.ToLowerInvariant();
     }
 
-    private static CultureInfo GetCulture(string name)
+    CultureInfo GetCulture(string name)
     {
         if (name == "system")
             name = GetSystemLanguage();
 
-        foreach (var lang in Languages)
+        foreach (Language lang in Languages)
             if (lang.MpvNetName == name)
                 return new CultureInfo(lang.CultureInfoName);
 
         return new CultureInfo("en");
     }
 
-    private class Language(string mpvNetName, string cultureInfoName, string twoLetterName)
+    class Language
     {
-        public string MpvNetName      { get; } = mpvNetName;
-        public string CultureInfoName { get; } = cultureInfoName;
+        public string MpvNetName { get; }
+        public string CultureInfoName { get; }
+        public string TwoLetterName { get; }
+
+        public Language(string mpvNetName, string cultureInfoName, string twoLetterName)
+        {
+            MpvNetName = mpvNetName;
+            CultureInfoName = cultureInfoName;
+            TwoLetterName = twoLetterName;
+        }
     }
 }

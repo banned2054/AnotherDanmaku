@@ -1,65 +1,83 @@
-// reference from https://referencesource.microsoft.com/#WindowsBase/Shared/MS/Win32/HandleCollector.cs,d0f99220d8e1b708
+﻿// reference from https://referencesource.microsoft.com/#WindowsBase/Shared/MS/Win32/HandleCollector.cs,d0f99220d8e1b708
 
-namespace MpvNet.Windows.WPF.HandyControl.Tools.Interop.Handle
+using System.Runtime.InteropServices;
+
+namespace HandyControl.Tools.Interop
 {
     internal static class HandleCollector
     {
-        private static HandleType[]? _handleTypes;
-        private static int           _handleTypeCount;
+        private static HandleType[] HandleTypes;
+        private static int HandleTypeCount;
 
-        private static readonly object HandleMutex = new();
+        private static readonly object HandleMutex = new object();
 
         internal static IntPtr Add(IntPtr handle, int type)
         {
-            _handleTypes?[type - 1].Add();
+            HandleTypes[type - 1].Add();
+            return handle;
+        }
+
+        [System.Security.SecuritySafeCritical]
+        internal static SafeHandle Add(SafeHandle handle, int type)
+        {
+            HandleTypes[type - 1].Add();
             return handle;
         }
 
         internal static void Add(int type)
         {
-            _handleTypes?[type - 1].Add();
+            HandleTypes[type - 1].Add();
         }
 
         internal static int RegisterType(string typeName, int expense, int initialThreshold)
         {
             lock (HandleMutex)
             {
-                if (_handleTypes != null && (_handleTypeCount == 0 || _handleTypeCount == _handleTypes.Length))
+                if (HandleTypeCount == 0 || HandleTypeCount == HandleTypes.Length)
                 {
-                    var newTypes = new HandleType[_handleTypeCount + 10];
-                    Array.Copy(_handleTypes, 0, newTypes, 0, _handleTypeCount);
-
-                    _handleTypes = newTypes;
+                    HandleType[] newTypes = new HandleType[HandleTypeCount + 10];
+                    if (HandleTypes != null)
+                    {
+                        Array.Copy(HandleTypes, 0, newTypes, 0, HandleTypeCount);
+                    }
+                    HandleTypes = newTypes;
                 }
 
-                if (_handleTypes != null) _handleTypes[_handleTypeCount++] = new HandleType(expense, initialThreshold);
-                return _handleTypeCount;
+                HandleTypes[HandleTypeCount++] = new HandleType(expense, initialThreshold);
+                return HandleTypeCount;
             }
         }
 
         internal static IntPtr Remove(IntPtr handle, int type)
         {
-            _handleTypes?[type - 1].Remove();
+            HandleTypes[type - 1].Remove();
+            return handle;
+        }
+
+        [System.Security.SecuritySafeCritical]
+        internal static SafeHandle Remove(SafeHandle handle, int type)
+        {
+            HandleTypes[type - 1].Remove();
             return handle;
         }
 
         internal static void Remove(int type)
         {
-            _handleTypes?[type - 1].Remove();
+            HandleTypes[type - 1].Remove();
         }
 
         private class HandleType
         {
             private readonly int _initialThreshHold;
-            private          int _threshHold;
-            private          int _handleCount;
+            private int _threshHold;
+            private int _handleCount;
             private readonly int _deltaPercent;
 
             internal HandleType(int expense, int initialThreshHold)
             {
                 _initialThreshHold = initialThreshHold;
-                _threshHold        = initialThreshHold;
-                _deltaPercent      = 100 - expense;
+                _threshHold = initialThreshHold;
+                _deltaPercent = 100 - expense;
             }
 
             internal void Add()
@@ -83,6 +101,7 @@ namespace MpvNet.Windows.WPF.HandyControl.Tools.Interop.Handle
 
             private bool NeedCollection()
             {
+
                 if (_handleCount > _threshHold)
                 {
                     _threshHold = _handleCount + _handleCount * _deltaPercent / 100;
@@ -90,7 +109,7 @@ namespace MpvNet.Windows.WPF.HandyControl.Tools.Interop.Handle
                 }
 
                 var oldThreshHold = 100 * _threshHold / (100 + _deltaPercent);
-                if (oldThreshHold >= _initialThreshHold && _handleCount < (int)(oldThreshHold * .9F))
+                if (oldThreshHold >= _initialThreshHold && _handleCount < (int) (oldThreshHold * .9F))
                 {
                     _threshHold = oldThreshHold;
                 }

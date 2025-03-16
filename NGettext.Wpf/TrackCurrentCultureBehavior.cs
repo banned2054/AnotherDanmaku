@@ -1,7 +1,7 @@
-using Microsoft.Xaml.Behaviors;
-using System.ComponentModel;
+﻿using System.ComponentModel;
 using System.Windows;
 using System.Windows.Markup;
+using Microsoft.Xaml.Behaviors;
 
 namespace NGettext.Wpf
 {
@@ -15,12 +15,17 @@ namespace NGettext.Wpf
     /// </summary>
     public class TrackCurrentCultureBehavior : Behavior<FrameworkElement>, IWeakCultureObserver
     {
-        public static ICultureTracker CultureTracker { get; set; } = null!;
+        public static ICultureTracker CultureTracker { get; set; }
 
         protected override void OnAttached()
         {
             if (!DesignerProperties.GetIsInDesignMode(AssociatedObject))
             {
+                if (CultureTracker is null)
+                {
+                    CompositionRoot.WriteMissingInitializationErrorMessage();
+                    return;
+                }
                 CultureTracker.AddWeakCultureObserver(this);
                 UpdateAssociatedObjectCulture();
             }
@@ -28,7 +33,7 @@ namespace NGettext.Wpf
             base.OnAttached();
         }
 
-        private void UpdateAssociatedObjectCulture()
+        void UpdateAssociatedObjectCulture()
         {
             if (AssociatedObject is null) return;
             AssociatedObject.Language = XmlLanguage.GetLanguage(CultureTracker.CurrentCulture.IetfLanguageTag);

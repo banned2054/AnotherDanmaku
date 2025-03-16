@@ -1,14 +1,16 @@
+﻿
+
 using System.ComponentModel;
 
-namespace MpvNet.Windows.WPF.HandyControl.Tools.Extension
+namespace HandyControl.Tools.Extension
 {
     public static class StringExtension
     {
-        public static T? Value<T>(this string input)
+        public static T Value<T>(this string input)
         {
             try
             {
-                return (T)TypeDescriptor.GetConverter(typeof(T)).ConvertFromString(input)!;
+                return (T) TypeDescriptor.GetConverter(typeof(T)).ConvertFromString(input);
             }
             catch
             {
@@ -16,11 +18,11 @@ namespace MpvNet.Windows.WPF.HandyControl.Tools.Extension
             }
         }
 
-        public static object? Value(this string input, Type type)
+        public static object Value(this string input, Type type)
         {
             try
             {
-                return TypeDescriptor.GetConverter(type).ConvertFromString(input)!;
+                return TypeDescriptor.GetConverter(type).ConvertFromString(input);
             }
             catch
             {

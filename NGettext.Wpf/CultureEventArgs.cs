@@ -1,9 +1,16 @@
+﻿
 using System.Globalization;
 
 namespace NGettext.Wpf
 {
-    public class CultureEventArgs(CultureInfo cultureInfo) : EventArgs
+    public class CultureEventArgs : EventArgs
     {
-        public CultureInfo CultureInfo { get; } = cultureInfo ?? throw new ArgumentNullException(nameof(cultureInfo));
+        public CultureEventArgs(CultureInfo cultureInfo)
+        {
+            if (cultureInfo == null) throw new ArgumentNullException(nameof(cultureInfo));
+            CultureInfo = cultureInfo;
+        }
+
+        public CultureInfo CultureInfo { get; }
     }
 }

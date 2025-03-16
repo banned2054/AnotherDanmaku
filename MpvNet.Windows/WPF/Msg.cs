@@ -1,7 +1,10 @@
-using MpvNet.Windows.WPF.MsgBox;
+﻿
 using System.Threading;
 using System.Windows;
+
 using Forms = System.Windows.Forms;
+
+using MpvNet.Windows.WPF.MsgBox;
 
 namespace MpvNet.Windows.WPF;
 
@@ -13,8 +16,8 @@ public class Msg
 
     public static void ShowWarning(object msg) => Show(msg, MessageBoxImage.Warning);
 
-    public static MessageBoxResult ShowQuestion(object           msg,
-                                                MessageBoxButton buttons = MessageBoxButton.OKCancel)
+    public static MessageBoxResult ShowQuestion(object msg,
+        MessageBoxButton buttons = MessageBoxButton.OKCancel)
     {
         return Show(msg, MessageBoxImage.Question, buttons);
     }
@@ -25,21 +28,24 @@ public class Msg
     }
 
     public static MessageBoxResult Show(
-        object           msg,
-        MessageBoxImage  img,
+        object msg,
+        MessageBoxImage img,
         MessageBoxButton buttons = MessageBoxButton.OK,
-        string?          details = null)
+        string? details = null)
     {
-        var state = Thread.CurrentThread.GetApartmentState();
+        ApartmentState state = Thread.CurrentThread.GetApartmentState();
+       
+        if (state == ApartmentState.STA)
+            return fn();
+        else
+            return Application.Current.Dispatcher.Invoke(fn);
 
-        return state == ApartmentState.STA ? Fn() : Application.Current.Dispatcher.Invoke(Fn);
-
-        MessageBoxResult Fn()
+        MessageBoxResult fn()
         {
             MessageBoxEx.DetailsText = details;
 
             return MessageBoxEx.OpenMessageBox((msg + "").Trim(),
-                                               Forms.Application.ProductName!, buttons, img);
+                Forms.Application.ProductName, buttons, img);
         }
     }
 }

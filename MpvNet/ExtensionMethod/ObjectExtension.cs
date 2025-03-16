@@ -1,3 +1,4 @@
+﻿
 namespace MpvNet.ExtensionMethod;
 
 public static class ObjectExtension
