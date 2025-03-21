@@ -56,7 +56,6 @@ Table of contents
 - [Download](#download)
 - [Manual](#manual)
 - [Screenshots](#screenshots)
-- [Contributing](#contributing)
 
 
 Features that mpv and mpv.net have in common
@@ -107,11 +106,6 @@ Features exclusive to mpv.net
 ## [Manual](docs/manual.md)
 
 [The mpv.net documentation.](docs/manual.md)
-
-
-## [Contributing](docs/contributing.md)
-
-[Contributing section of the manual.](docs/manual.md#contributing)
 
 
 Screenshots
