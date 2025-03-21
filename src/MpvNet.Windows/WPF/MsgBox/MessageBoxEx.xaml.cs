@@ -320,7 +320,7 @@ public sealed partial class MessageBoxEx : Window, INotifyPropertyChanged
         Buttons         = buttons;
         SetButtonTemplates();
         InitBottom(image);
-        FindDefaultButton(staticButtonDefault);
+        FindDefaultButton(StaticButtonDefault);
     }
 
     private void Init(string msg, string title, MessageBoxButtonEx buttons, MessageBoxImage image)
@@ -331,7 +331,7 @@ public sealed partial class MessageBoxEx : Window, INotifyPropertyChanged
         ButtonsEx       = buttons;
         SetButtonTemplates();
         InitBottom(image);
-        FindDefaultButtonEx(staticButtonDefault);
+        FindDefaultButtonEx(StaticButtonDefault);
     }
 
     private void InitTop(string msg, string title)
@@ -393,7 +393,7 @@ public sealed partial class MessageBoxEx : Window, INotifyPropertyChanged
             {
                 MessageIcon = GetIcon(SystemIcons.Error);
 
-                if (!isSilent)
+                if (!_isSilent)
                     SystemSounds.Hand.Play();
             }
                 break;
@@ -402,7 +402,7 @@ public sealed partial class MessageBoxEx : Window, INotifyPropertyChanged
             {
                 MessageIcon = GetIcon(SystemIcons.Information);
 
-                if (!isSilent)
+                if (!_isSilent)
                     SystemSounds.Asterisk.Play();
             }
                 break;
@@ -411,7 +411,7 @@ public sealed partial class MessageBoxEx : Window, INotifyPropertyChanged
             {
                 MessageIcon = GetIcon(SystemIcons.Question);
 
-                if (!isSilent)
+                if (!_isSilent)
                     SystemSounds.Question.Play();
             }
                 break;
@@ -420,7 +420,7 @@ public sealed partial class MessageBoxEx : Window, INotifyPropertyChanged
             {
                 MessageIcon = GetIcon(SystemIcons.Warning);
 
-                if (!isSilent)
+                if (!_isSilent)
                     SystemSounds.Exclamation.Play();
             }
                 break;
@@ -819,7 +819,7 @@ public sealed partial class MessageBoxEx : Window, INotifyPropertyChanged
     {
         DetailsText         = null;
         CheckBoxData        = null;
-        staticButtonDefault = MessageBoxButtonDefault.Forms;
+        StaticButtonDefault = MessageBoxButtonDefault.Forms;
 
         if (MessageResult != MessageBoxResult.None) return;
         if (_usingExButtons)
@@ -885,7 +885,7 @@ public sealed partial class MessageBoxEx : Window, INotifyPropertyChanged
 
     private void Window_SourceInitialized(object sender, EventArgs e)
     {
-        if (enableCloseButton) return;
+        if (_enableCloseButton) return;
         var hWnd    = new WindowInteropHelper(this);
         var sysMenu = GetSystemMenu(hWnd.Handle, false);
         EnableMenuItem(sysMenu, ScClose, MfByCommand | MfGrayed);

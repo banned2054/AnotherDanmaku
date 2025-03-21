@@ -17,7 +17,7 @@ using MpvNet.Windows.WPF.MsgBox;
 
 using WpfControls = System.Windows.Controls;
 using CommunityToolkit.Mvvm.Messaging;
-
+using MpvNet.Windows.Native;
 using static MpvNet.Windows.Native.WinApi;
 using static MpvNet.Windows.Help.WinApiHelp;
 
